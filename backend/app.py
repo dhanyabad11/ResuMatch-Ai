@@ -12,7 +12,21 @@ from typing import Optional
 load_dotenv()
 
 app = Flask(__name__)
-CORS(app)
+
+# Configure CORS for production - allow your Vercel domain
+if os.getenv('RENDER') or os.getenv('RAILWAY_ENVIRONMENT') or os.getenv('HEROKU'):
+    # Production environment - allow your frontend domains
+    allowed_origins = [
+        'https://*.vercel.app',
+        'https://resu-match-ai-three.vercel.app',  # Your specific Vercel domain
+        'https://*.netlify.app',
+        'http://localhost:3000',  # Keep for local development
+        'http://localhost:3001'
+    ]
+    CORS(app, origins=allowed_origins, supports_credentials=True)
+else:
+    # Development environment
+    CORS(app)
 
 # Configure Gemini API
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
