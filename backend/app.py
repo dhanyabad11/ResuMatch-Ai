@@ -5,6 +5,8 @@ import PyPDF2
 import os
 from dotenv import load_dotenv
 import io
+import time
+from typing import Optional
 
 # Load environment variables
 load_dotenv()
@@ -14,7 +16,19 @@ CORS(app)
 
 # Configure Gemini API
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
-model = genai.GenerativeModel('gemini-pro')
+
+# Configure generation settings for better reliability
+generation_config = {
+    "temperature": 0.3,
+    "top_p": 0.8,
+    "top_k": 40,
+    "max_output_tokens": 8192,
+}
+
+model = genai.GenerativeModel(
+    'gemini-2.5-flash',
+    generation_config=generation_config
+)
 
 def extract_text_from_pdf(pdf_file):
     """Extract text from uploaded PDF file"""
@@ -27,11 +41,13 @@ def extract_text_from_pdf(pdf_file):
     except Exception as e:
         return f"Error extracting text: {str(e)}"
 
-def analyze_resume_with_gemini(resume_text, job_description=""):
-    """Analyze resume using Google Gemini API"""
-    try:
-        if job_description:
-            prompt = f"""
+def analyze_resume_with_gemini(resume_text, job_description="", max_retries=3):
+    """Analyze resume using Google Gemini API with timeout and retry logic"""
+    
+    for attempt in range(max_retries):
+        try:
+            if job_description:
+                prompt = f"""
             You are an expert ATS (Applicant Tracking System) and hiring manager. Analyze this resume against the job description and provide detailed feedback.
 
             JOB DESCRIPTION:
@@ -42,7 +58,8 @@ def analyze_resume_with_gemini(resume_text, job_description=""):
 
             Please provide a comprehensive analysis with:
 
-            **OVERALL SCORE: X/10** (How likely is this resume to pass ATS and get shortlisted?)
+            **OVERALL ATS SCORE: X/100** (How likely is this resume to pass ATS and get shortlisted?)
+            Score Guide: 85-100 = Excellent, 70-84 = Good, 55-69 = Fair, 40-54 = Needs Work, 0-39 = Major Issues
 
             **ATS COMPATIBILITY ANALYSIS:**
             - ATS-friendly formatting score
@@ -74,46 +91,75 @@ def analyze_resume_with_gemini(resume_text, job_description=""):
 
             Be specific, actionable, and focus on getting this resume past ATS systems and into human hands.
             """
-        else:
-            prompt = f"""
-            You are an expert resume reviewer and ATS specialist. Analyze this resume for general optimization:
+            else:
+                prompt = f"""
+                You are an expert resume reviewer and ATS specialist. Analyze this resume for general optimization:
 
-            RESUME:
-            {resume_text}
+                RESUME:
+                {resume_text}
 
-            Please provide:
+                Please provide:
 
-            **OVERALL SCORE: X/10** (General resume effectiveness)
+                **OVERALL ATS SCORE: X/100** (General resume effectiveness and ATS compatibility)
+                Score Guide: 85-100 = Excellent, 70-84 = Good, 55-69 = Fair, 40-54 = Needs Work, 0-39 = Major Issues
 
-            **ATS COMPATIBILITY:**
-            - Formatting and structure assessment
-            - Common ATS parsing issues
-            - Recommended format improvements
+                **ATS COMPATIBILITY:**
+                - Formatting and structure assessment
+                - Common ATS parsing issues
+                - Recommended format improvements
 
-            **CONTENT ANALYSIS:**
-            - Skills presentation effectiveness
-            - Experience descriptions quality
-            - Achievement quantification
-            - Professional summary strength
+                **CONTENT ANALYSIS:**
+                - Skills presentation effectiveness
+                - Experience descriptions quality
+                - Achievement quantification
+                - Professional summary strength
 
-            **IMPROVEMENT RECOMMENDATIONS:**
-            - Top 5 specific changes to make
-            - Missing sections or information
-            - Better ways to present experience
-            - Industry best practices to implement
+                **IMPROVEMENT RECOMMENDATIONS:**
+                - Top 5 specific changes to make
+                - Missing sections or information
+                - Better ways to present experience
+                - Industry best practices to implement
 
-            **GENERAL OPTIMIZATION:**
-            - Keyword strategy suggestions
-            - Content organization improvements
-            - Professional presentation tips
+                **GENERAL OPTIMIZATION:**
+                - Keyword strategy suggestions
+                - Content organization improvements
+                - Professional presentation tips
 
-            Focus on making this resume more competitive and ATS-friendly.
-            """
+                Focus on making this resume more competitive and ATS-friendly.
+                """
         
-        response = model.generate_content(prompt)
-        return response.text
-    except Exception as e:
-        return f"Error analyzing resume: {str(e)}"
+            # Generate content with timeout handling
+            response = model.generate_content(prompt)
+            return response.text
+            
+        except Exception as e:
+            error_msg = str(e)
+            print(f"Attempt {attempt + 1} failed: {error_msg}")
+            
+            # Handle specific timeout errors
+            if "504" in error_msg or "timeout" in error_msg.lower() or "deadline" in error_msg.lower():
+                if attempt < max_retries - 1:
+                    wait_time = (attempt + 1) * 2  # Exponential backoff: 2s, 4s, 6s
+                    print(f"Retrying in {wait_time} seconds...")
+                    time.sleep(wait_time)
+                    continue
+                else:
+                    return "Error: The AI service is experiencing high demand. Please try again in a few moments."
+            
+            # Handle other API errors
+            elif "quota" in error_msg.lower() or "limit" in error_msg.lower():
+                return "Error: API quota exceeded. Please try again later."
+            
+            elif "api" in error_msg.lower() and "key" in error_msg.lower():
+                return "Error: API configuration issue. Please contact support."
+            
+            else:
+                # For the last attempt or unknown errors, return the actual error
+                if attempt == max_retries - 1:
+                    return f"Error analyzing resume: Unable to process after {max_retries} attempts. Please try again."
+                continue
+    
+    return "Error: Maximum retry attempts exceeded. Please try again later."
 
 @app.route('/')
 def health_check():
