@@ -110,7 +110,7 @@ ResuMatch-Ai/
     python app.py
     ```
 
-The backend server will start on `http://localhost:5000`
+The backend server will start on `http://localhost:5001`
 
 ### Frontend Setup
 
@@ -126,7 +126,21 @@ The backend server will start on `http://localhost:5000`
     npm install
     ```
 
-3. Run the development server:
+3. Create environment file (optional):
+
+    ```bash
+    cp .env.example .env
+    ```
+
+4. Configure environment variables in `.env` (optional):
+
+    ```
+    NEXT_PUBLIC_API_URL=http://localhost:5001
+    NEXT_PUBLIC_APP_NAME=ResuMatch AI
+    NEXT_PUBLIC_APP_DESCRIPTION=AI-powered resume analysis to help you stand out from the crowd
+    ```
+
+5. Run the development server:
     ```bash
     npm run dev
     ```
