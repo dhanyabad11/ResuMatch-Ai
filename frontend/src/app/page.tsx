@@ -54,9 +54,7 @@ export default function Home() {
                 getApiUrl(API_CONFIG.endpoints.analyzeResume),
                 formData,
                 {
-                    headers: {
-                        "Content-Type": "multipart/form-data",
-                    },
+                    // Don't set Content-Type manually - let browser set it with boundary
                     timeout: 120000, // 2 minutes timeout
                 }
             );

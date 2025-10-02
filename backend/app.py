@@ -13,20 +13,13 @@ load_dotenv()
 
 app = Flask(__name__)
 
-# Configure CORS for production - allow your Vercel domain
-if os.getenv('RENDER') or os.getenv('RAILWAY_ENVIRONMENT') or os.getenv('HEROKU'):
-    # Production environment - allow your frontend domains
-    allowed_origins = [
-        'https://*.vercel.app',
-        'https://resu-match-ai-three.vercel.app',  # Your specific Vercel domain
-        'https://*.netlify.app',
-        'http://localhost:3000',  # Keep for local development
-        'http://localhost:3001'
-    ]
-    CORS(app, origins=allowed_origins, supports_credentials=True)
-else:
-    # Development environment
-    CORS(app)
+# Configure CORS to allow your Vercel domain with all necessary headers
+CORS(app, 
+     origins=['https://resu-match-ai-three.vercel.app', 'http://localhost:3000'],
+     methods=['GET', 'POST', 'OPTIONS'],
+     allow_headers=['Content-Type', 'Authorization', 'X-Requested-With'],
+     expose_headers=['Content-Type'],
+     supports_credentials=True)
 
 # Configure Gemini API
 genai.configure(api_key=os.getenv('GEMINI_API_KEY'))
@@ -43,6 +36,17 @@ model = genai.GenerativeModel(
     'gemini-2.5-flash',
     generation_config=generation_config
 )
+
+# Handle preflight OPTIONS requests explicitly
+@app.before_request
+def handle_preflight():
+    if request.method == "OPTIONS":
+        response = jsonify({'status': 'ok'})
+        response.headers.add("Access-Control-Allow-Origin", request.headers.get('Origin', '*'))
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
 
 def extract_text_from_pdf(pdf_file):
     """Extract text from uploaded PDF file"""
