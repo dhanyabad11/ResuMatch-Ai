@@ -1,6 +1,6 @@
 // API configuration and utilities
 export const API_CONFIG = {
-    baseURL: process.env.NEXT_PUBLIC_API_URL,
+    baseURL: process.env.NEXT_PUBLIC_API_URL || "https://resumatch-ai-dppz.onrender.com",
     endpoints: {
         analyzeResume: "/analyze-resume",
         extractText: "/extract-text",
