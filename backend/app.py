@@ -59,9 +59,8 @@ if __name__ == '__main__':
     print("🤖 AI analysis service ready")
     print("=" * 50)
     
-    config = get_config()
     app.run(
         host='0.0.0.0',
         port=5001,
-        debug=config.FLASK_DEBUG
+        debug=True
     )
