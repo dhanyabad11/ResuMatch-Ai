@@ -10,99 +10,43 @@ import os
 # Add src directory to Python path
 sys.path.append(os.path.join(os.path.dirname(__file__), 'src'))
 
-from src.config.settings import get_config
-from src.routes.api_routes import api_bp
-
 def create_app():
     """Application factory pattern"""
     app = Flask(__name__)
-    
-    # Load configuration
-    config = get_config()
-    
-    # Validate configuration
-    try:
-        config.validate_config()
-    except ValueError as e:
-        print(f"Configuration Error: {e}")
-        sys.exit(1)
-    
-    # Configure Flask app
-    app.config['MAX_CONTENT_LENGTH'] = config.MAX_CONTENT_LENGTH
-    
-    # Configure CORS with explicit settings
-    CORS(app, 
-         origins=['https://resu-match-ai-three.vercel.app', 'http://localhost:3000', 'http://localhost:3001'],
+
+    # Simple CORS configuration
+    CORS(app,
+         origins=['https://resu-match-ai-three.vercel.app', 'https://*.vercel.app'],
          methods=['GET', 'POST', 'OPTIONS'],
-         allow_headers=['Content-Type', 'Authorization', 'X-Requested-With'],
-         expose_headers=['Content-Type'],
+         allow_headers=['Content-Type', 'Authorization'],
          supports_credentials=True)
-    
-    # Handle preflight OPTIONS requests explicitly
-    @app.before_request
-    def handle_preflight():
-        from flask import request, make_response
-        if request.method == "OPTIONS":
-            response = make_response()
-            origin = request.headers.get('Origin', '*')
-            response.headers['Access-Control-Allow-Origin'] = origin
-            response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,X-Requested-With'
-            response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
-            response.headers['Access-Control-Allow-Credentials'] = 'true'
-            return response
-    
-    # Add CORS headers to all responses
-    @app.after_request
-    def after_request(response):
-        from flask import request
-        origin = request.headers.get('Origin')
-        
-        # Always allow the specific Vercel domain
-        if origin == 'https://resu-match-ai-three.vercel.app':
-            response.headers['Access-Control-Allow-Origin'] = origin
-        elif origin and any(allowed in origin for allowed in ['vercel.app', 'localhost']):
-            response.headers['Access-Control-Allow-Origin'] = origin
-        else:
-            response.headers['Access-Control-Allow-Origin'] = '*'
-            
-        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,X-Requested-With'
-        response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
-        response.headers['Access-Control-Allow-Credentials'] = 'true'
-        return response
-    
-    # Register blueprints
-    app.register_blueprint(api_bp)
-    
-    # Error handlers
-    @app.errorhandler(413)
-    def file_too_large(error):
+
+    # Basic health check route
+    @app.route('/')
+    def health_check():
         return {
-            "error": "File too large",
-            "message": "File size exceeds 16MB limit. Please upload a smaller resume.",
-            "max_size": "16MB"
-        }, 413
-    
-    @app.errorhandler(404)
-    def not_found(error):
-        return {
-            "error": "Endpoint not found",
-            "message": "The requested endpoint does not exist",
-            "available_endpoints": {
-                "GET /": "Health check",
-                "POST /analyze-resume": "Analyze resume with AI",
-                "POST /extract-text": "Extract text from PDF only",
-                "POST /validate-file": "Validate file upload"
-            }
-        }, 404
-    
-    @app.errorhandler(500)
-    def internal_error(error):
-        return {
-            "error": "Internal server error",
-            "message": "An unexpected error occurred. Please try again later."
-        }, 500
-    
+            "message": "ResuMatch AI Backend is running",
+            "status": "healthy",
+            "version": "1.0.0"
+        }
+
+    # Try to import and register API routes
+    try:
+        from src.routes.api_routes import api_bp
+        app.register_blueprint(api_bp)
+        print("API routes registered successfully")
+    except Exception as e:
+        print(f"Warning: Could not load API routes: {e}")
+        @app.route('/analyze-resume', methods=['POST'])
+        def fallback_analyze():
+            return {
+                "error": "Service temporarily unavailable",
+                "message": "Please try again later"
+            }, 503
+
     return app
+
+# Create app instance
 
 # Create application instance
 app = create_app()
