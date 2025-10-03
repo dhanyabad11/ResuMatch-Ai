@@ -32,7 +32,7 @@ def create_app():
     
     # Configure CORS with explicit settings
     CORS(app, 
-         origins=config.CORS_ORIGINS,
+         origins=['https://resu-match-ai-three.vercel.app', 'http://localhost:3000', 'http://localhost:3001'],
          methods=['GET', 'POST', 'OPTIONS'],
          allow_headers=['Content-Type', 'Authorization', 'X-Requested-With'],
          expose_headers=['Content-Type'],
@@ -44,9 +44,11 @@ def create_app():
         from flask import request, make_response
         if request.method == "OPTIONS":
             response = make_response()
-            response.headers.add("Access-Control-Allow-Origin", "*")
-            response.headers.add('Access-Control-Allow-Headers', "*")
-            response.headers.add('Access-Control-Allow-Methods', "*")
+            origin = request.headers.get('Origin', '*')
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,X-Requested-With'
+            response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
+            response.headers['Access-Control-Allow-Credentials'] = 'true'
             return response
     
     # Add CORS headers to all responses
@@ -54,13 +56,18 @@ def create_app():
     def after_request(response):
         from flask import request
         origin = request.headers.get('Origin')
-        if origin in config.CORS_ORIGINS:
-            response.headers.add('Access-Control-Allow-Origin', origin)
+        
+        # Always allow the specific Vercel domain
+        if origin == 'https://resu-match-ai-three.vercel.app':
+            response.headers['Access-Control-Allow-Origin'] = origin
+        elif origin and any(allowed in origin for allowed in ['vercel.app', 'localhost']):
+            response.headers['Access-Control-Allow-Origin'] = origin
         else:
-            response.headers.add('Access-Control-Allow-Origin', '*')
-        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
-        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-        response.headers.add('Access-Control-Allow-Credentials', 'true')
+            response.headers['Access-Control-Allow-Origin'] = '*'
+            
+        response.headers['Access-Control-Allow-Headers'] = 'Content-Type,Authorization,X-Requested-With'
+        response.headers['Access-Control-Allow-Methods'] = 'GET,POST,PUT,DELETE,OPTIONS'
+        response.headers['Access-Control-Allow-Credentials'] = 'true'
         return response
     
     # Register blueprints
