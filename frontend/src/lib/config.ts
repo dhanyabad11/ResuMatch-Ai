@@ -1,6 +1,6 @@
 // API configuration and utilities
 export const API_CONFIG = {
-    baseURL: process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001",
+    baseURL: process.env.NEXT_PUBLIC_API_URL,
     endpoints: {
         analyzeResume: "/analyze-resume",
         extractText: "/extract-text",
