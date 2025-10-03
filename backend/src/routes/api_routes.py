@@ -9,23 +9,22 @@ import logging
 # Create blueprint for API routes
 api_bp = Blueprint('api', __name__)
 
-# Initialize services lazily
-pdf_processor = None
-ai_analyzer = None
-
-def get_pdf_processor():
-    global pdf_processor
-    if pdf_processor is None:
-        from ..services.pdf_service import PDFProcessor
-        pdf_processor = PDFProcessor()
-    return pdf_processor
-
-def get_ai_analyzer():
-    global ai_analyzer
-    if ai_analyzer is None:
-        from ..services.ai_service import AIAnalyzer
-        ai_analyzer = AIAnalyzer()
-    return ai_analyzer
+# Initialize services with error handling
+try:
+    from ..services.pdf_service import PDFProcessor
+    from ..services.ai_service import AIAnalyzer
+    from ..validators.file_validator import FileValidator
+    pdf_processor = PDFProcessor()
+    ai_analyzer = AIAnalyzer()
+    print("Services initialized successfully")
+except ImportError as e:
+    print(f"Import error: {e}")
+    pdf_processor = None
+    ai_analyzer = None
+except Exception as e:
+    print(f"Service initialization error: {e}")
+    pdf_processor = None
+    ai_analyzer = None
 
 @api_bp.route('/')
 @cross_origin()
@@ -62,10 +61,16 @@ def analyze_resume():
         # Validate file
         is_valid, validation_errors = FileValidator.validate_upload(file)
         if not is_valid:
-            return FileValidator.create_error_response(validation_errors)
+            return jsonify({
+                "error": "File validation failed",
+                "details": validation_errors,
+                "message": "Please provide a valid resume in PDF format"
+            }), 400
         
         # Extract text from PDF
-        success, result = get_pdf_processor().extract_text_from_pdf(file)
+        if pdf_processor is None:
+            return jsonify({"error": "PDF processing service not available"}), 500
+        success, result = pdf_processor.extract_text_from_pdf(file)
         if not success:
             return jsonify({
                 "error": "Failed to process resume",
@@ -76,11 +81,15 @@ def analyze_resume():
         resume_text = result
         
         # Get text statistics for logging
-        text_stats = get_pdf_processor().get_text_stats(resume_text)
+        if pdf_processor is None:
+            return jsonify({"error": "PDF processing service not available"}), 500
+        text_stats = pdf_processor.get_text_stats(resume_text)
         print(f"PDF processed successfully: {text_stats}")
         
         # Perform AI analysis
-        analysis_result = get_ai_analyzer().analyze_resume(resume_text, job_description)
+        if ai_analyzer is None:
+            return jsonify({"error": "AI analysis service not available"}), 500
+        analysis_result = ai_analyzer.analyze_resume(resume_text, job_description)
         
         # Check if analysis failed
         if analysis_result.startswith("Error:"):
@@ -142,7 +151,9 @@ def extract_text():
         
         # Extract text using PDF processor
         file.seek(0)  # Reset file pointer
-        success, result = get_pdf_processor().extract_text_from_pdf(file)
+        if pdf_processor is None:
+            return jsonify({"error": "PDF processing service not available"}), 500
+        success, result = pdf_processor.extract_text_from_pdf(file)
         
         if not success:
             return jsonify({
