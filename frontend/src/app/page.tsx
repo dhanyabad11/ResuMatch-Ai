@@ -55,7 +55,7 @@ export default function Home() {
                 formData,
                 {
                     // Don't set Content-Type manually - let browser set it with boundary
-                    timeout: 120000, // 2 minutes timeout
+                    timeout: 180000, // 3 minutes timeout for better reliability
                 }
             );
 
