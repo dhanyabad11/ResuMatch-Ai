@@ -49,6 +49,20 @@ def create_app():
             response.headers.add('Access-Control-Allow-Methods', "*")
             return response
     
+    # Add CORS headers to all responses
+    @app.after_request
+    def after_request(response):
+        from flask import request
+        origin = request.headers.get('Origin')
+        if origin in config.CORS_ORIGINS:
+            response.headers.add('Access-Control-Allow-Origin', origin)
+        else:
+            response.headers.add('Access-Control-Allow-Origin', '*')
+        response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
+        response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
+        response.headers.add('Access-Control-Allow-Credentials', 'true')
+        return response
+    
     # Register blueprints
     app.register_blueprint(api_bp)
     
