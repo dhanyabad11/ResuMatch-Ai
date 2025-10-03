@@ -34,6 +34,61 @@ export default function Home() {
         return scoreMatch ? parseInt(scoreMatch[1]) : null;
     };
 
+    // Helper function to extract analysis section (score, skills, experience)
+    const getAnalysisSection = (text: string): string => {
+        const lines = text.split("\n");
+        const analysisLines: string[] = [];
+        let inImprovementSection = false;
+
+        for (const line of lines) {
+            // Stop at improvement sections
+            if (
+                line.match(
+                    /DETAILED IMPROVEMENT|IMPROVEMENT RECOMMENDATIONS|ATS OPTIMIZATION|IMPROVEMENT PLAN/i
+                )
+            ) {
+                inImprovementSection = true;
+                break;
+            }
+
+            // Include analysis sections
+            if (
+                line.match(
+                    /ATS SCORE|SKILLS MATCH|EXPERIENCE EVALUATION|TECHNICAL SKILLS|PROFESSIONAL EXPERIENCE|RESUME STRUCTURE/i
+                ) ||
+                !inImprovementSection
+            ) {
+                analysisLines.push(line);
+            }
+        }
+
+        return analysisLines.join("\n");
+    };
+
+    // Helper function to extract improvement section
+    const getImprovementSection = (text: string): string => {
+        const lines = text.split("\n");
+        const improvementLines: string[] = [];
+        let inImprovementSection = false;
+
+        for (const line of lines) {
+            // Start collecting at improvement sections
+            if (
+                line.match(
+                    /DETAILED IMPROVEMENT|IMPROVEMENT RECOMMENDATIONS|ATS OPTIMIZATION|IMPROVEMENT PLAN/i
+                )
+            ) {
+                inImprovementSection = true;
+            }
+
+            if (inImprovementSection) {
+                improvementLines.push(line);
+            }
+        }
+
+        return improvementLines.join("\n");
+    };
+
     const handleAnalyze = async () => {
         if (!selectedFile) {
             setError("Please select a PDF file");
@@ -50,33 +105,42 @@ export default function Home() {
         formData.append("job_description", jobDescription);
 
         try {
-            const response = await axios.post(
-                getApiUrl(API_CONFIG.endpoints.analyzeResume),
-                formData,
-                {
-                    // Don't set Content-Type manually - let browser set it with boundary
-                    timeout: 180000, // 3 minutes timeout for better reliability
-                }
-            );
+            const response = await axios.post(getApiUrl("/analyze-resume"), formData, {
+                ...API_CONFIG,
+                timeout: 120000, // 2 minutes timeout for AI analysis
+            });
 
-            setAnalysis(response.data.analysis);
-            const score = extractScore(response.data.analysis);
-            setMatchScore(score);
-        } catch (err) {
-            if (axios.isAxiosError(err)) {
-                if (err.code === "ECONNABORTED" || err.message.includes("timeout")) {
+            if (response.data && response.data.analysis) {
+                const analysisResult = response.data.analysis;
+                setAnalysis(analysisResult);
+
+                // Extract score from analysis
+                const score = extractScore(analysisResult);
+                setMatchScore(score);
+            } else {
+                setError("Analysis completed but no results returned. Please try again.");
+            }
+        } catch (error) {
+            console.error("Analysis error:", error);
+
+            if (axios.isAxiosError(error)) {
+                if (error.code === "ECONNABORTED") {
                     setError(
                         "Analysis timed out. The AI service is taking longer than usual. Please try again."
                     );
-                } else if (err.response?.status === 504) {
-                    setError("Service temporarily unavailable. Please try again in a few moments.");
-                } else {
+                } else if (error.response?.status === 413) {
+                    setError("File size too large. Please upload a smaller resume (max 16MB).");
+                } else if (error.response?.data?.error) {
+                    setError(error.response.data.error);
+                } else if (error.message?.includes("Network Error")) {
                     setError(
-                        err.response?.data?.error || "An error occurred while analyzing the resume"
+                        "Unable to connect to analysis service. Please check your internet connection and try again."
                     );
+                } else {
+                    setError("Analysis failed. Please try again in a few moments.");
                 }
             } else {
-                setError("An error occurred while analyzing the resume");
+                setError("Analysis failed. Please try again in a few moments.");
             }
         } finally {
             setLoading(false);
@@ -96,6 +160,102 @@ export default function Home() {
         if (score >= 55) return "Fair ATS Match";
         if (score >= 40) return "Needs Improvement";
         return "Major Issues";
+    };
+
+    const renderAnalysisContent = (content: string, isImprovement: boolean = false) => {
+        return content.split("\n").map((line, index) => {
+            const trimmedLine = line.trim();
+
+            // Skip empty lines
+            if (!trimmedLine) return null;
+
+            // Main headers - clean and simple
+            if (trimmedLine.match(/^\*\*[^:]+:\*\*$/)) {
+                const headerText = trimmedLine.replace(/\*\*/g, "").replace(":", "");
+                return (
+                    <div key={index} className="mt-8 mb-4 first:mt-0">
+                        <h3
+                            className={`text-xl font-semibold border-b-2 pb-2 ${
+                                isImprovement
+                                    ? "text-green-800 border-green-200"
+                                    : "text-gray-900 border-gray-200"
+                            }`}
+                        >
+                            {headerText}
+                        </h3>
+                    </div>
+                );
+            }
+
+            // Score lines - clean display
+            if (trimmedLine.match(/SCORE.*\d+\/100/i)) {
+                const match = trimmedLine.match(/(\d+)\/100/);
+                const score = match ? parseInt(match[1]) : 0;
+                return (
+                    <div key={index} className="my-6 p-4 bg-gray-50 rounded-lg border">
+                        <div className="flex items-center justify-between">
+                            <span className="text-gray-800 font-medium">ATS Score</span>
+                            <div className="flex items-center space-x-2">
+                                <span className={`text-2xl font-bold ${getScoreColor(score)}`}>
+                                    {score}/100
+                                </span>
+                                <span className={`text-sm ${getScoreColor(score)}`}>
+                                    {getScoreLabel(score)}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Numbered improvement points (for improvements section)
+            if (isImprovement && trimmedLine.match(/^\d+\.\s+/)) {
+                const cleanText = trimmedLine.replace(/\*\*/g, "");
+                return (
+                    <div key={index} className="mb-3">
+                        <div className="flex items-start">
+                            <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full mr-3 mt-0.5 flex-shrink-0">
+                                {trimmedLine.match(/^(\d+)\./)?.[1]}
+                            </span>
+                            <p className="text-gray-700 leading-relaxed text-sm">
+                                {cleanText.replace(/^\d+\.\s+/, "")}
+                            </p>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Simple bullet points - remove asterisks
+            if (trimmedLine.match(/^\*\s+/)) {
+                const cleanText = trimmedLine.replace(/^\*\s+/, "").replace(/\*\*/g, "");
+                return (
+                    <div key={index} className="ml-4 mb-2">
+                        <div className="flex items-start">
+                            <span
+                                className={`mr-3 mt-1.5 w-1 h-1 rounded-full flex-shrink-0 ${
+                                    isImprovement
+                                        ? "text-green-400 bg-green-400"
+                                        : "text-gray-400 bg-gray-400"
+                                }`}
+                            ></span>
+                            <p className="text-gray-700 leading-relaxed text-sm">{cleanText}</p>
+                        </div>
+                    </div>
+                );
+            }
+
+            // Regular text - clean and simple
+            if (trimmedLine.length > 0) {
+                const cleanText = trimmedLine.replace(/\*\*/g, "");
+                return (
+                    <p key={index} className="text-gray-700 leading-relaxed mb-3">
+                        {cleanText}
+                    </p>
+                );
+            }
+
+            return null;
+        });
     };
 
     return (
@@ -150,43 +310,54 @@ export default function Home() {
                                             <path
                                                 strokeLinecap="round"
                                                 strokeLinejoin="round"
-                                                strokeWidth={1.5}
-                                                d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"
+                                                strokeWidth="2"
+                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
                                             />
                                         </svg>
                                     </div>
                                     <div>
-                                        <p className="text-gray-600">Drop Résumé PDF Here</p>
-                                        <p className="text-sm text-gray-400 mt-1">
-                                            or click to browse
+                                        <p className="text-gray-700 font-medium">
+                                            Drop your resume here or click to browse
                                         </p>
+                                        <p className="text-gray-500 text-sm mt-1">PDF files only</p>
                                     </div>
                                 </div>
                             </label>
                         </div>
                         {selectedFile && (
-                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-                                ✓ {selectedFile.name}
-                            </p>
+                            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md">
+                                <div className="w-8 h-8 text-red-600">
+                                    <svg fill="currentColor" viewBox="0 0 24 24">
+                                        <path d="M7 18h10v-1H7v1zM7 16h10v-1H7v1zM7 14h10v-1H7v1zM7 12h10v-1H7v1zM7 10h7V9H7v1z" />
+                                    </svg>
+                                </div>
+                                <div className="flex-1">
+                                    <p className="text-sm font-medium text-gray-900">
+                                        {selectedFile.name}
+                                    </p>
+                                    <p className="text-xs text-gray-500">
+                                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                                    </p>
+                                </div>
+                            </div>
                         )}
                     </div>
 
-                    {/* Job Description Upload */}
+                    {/* Job Description */}
                     <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-black">Job Description</h3>
-                        <div className="border border-gray-300 rounded-lg">
-                            <textarea
-                                placeholder="Paste job description here for targeted analysis..."
-                                className="w-full h-40 p-4 border-none rounded-lg resize-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                                value={jobDescription}
-                                onChange={(e) => setJobDescription(e.target.value)}
-                            />
-                        </div>
-                        {jobDescription && (
-                            <p className="text-sm text-gray-600 bg-gray-50 p-3 rounded-md">
-                                ✓ Job description added ({jobDescription.length} characters)
-                            </p>
-                        )}
+                        <h3 className="text-lg font-semibold text-black">
+                            Job Description{" "}
+                            <span className="text-gray-400 font-normal">(Optional)</span>
+                        </h3>
+                        <textarea
+                            value={jobDescription}
+                            onChange={(e) => setJobDescription(e.target.value)}
+                            placeholder="Paste the job description here for targeted analysis..."
+                            className="w-full h-48 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
+                        />
+                        <p className="text-xs text-gray-500">
+                            Adding a job description will provide more targeted feedback and scoring
+                        </p>
                     </div>
                 </div>
 
@@ -194,68 +365,22 @@ export default function Home() {
                 <div className="text-center mb-12">
                     <button
                         onClick={handleAnalyze}
-                        disabled={loading || !selectedFile}
-                        className="bg-blue-600 text-white px-8 py-3 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        disabled={!selectedFile || loading}
+                        className="bg-black text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                     >
-                        {loading ? (
-                            <span className="flex items-center">
-                                <svg
-                                    className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                                    xmlns="http://www.w3.org/2000/svg"
-                                    fill="none"
-                                    viewBox="0 0 24 24"
-                                >
-                                    <circle
-                                        className="opacity-25"
-                                        cx="12"
-                                        cy="12"
-                                        r="10"
-                                        stroke="currentColor"
-                                        strokeWidth="4"
-                                    ></circle>
-                                    <path
-                                        className="opacity-75"
-                                        fill="currentColor"
-                                        d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                    ></path>
-                                </svg>
-                                Analyzing with AI...
-                            </span>
-                        ) : (
-                            "Analyze"
-                        )}
+                        {loading ? "Analyzing..." : "Analyze Resume"}
                     </button>
                 </div>
 
-                {/* Loading Progress Message */}
+                {/* Loading State */}
                 {loading && (
-                    <div className="mb-8 p-4 bg-blue-50 border border-blue-200 rounded-md">
-                        <div className="flex items-center">
-                            <svg
-                                className="animate-spin h-5 w-5 text-blue-600 mr-3"
-                                fill="none"
-                                viewBox="0 0 24 24"
-                            >
-                                <circle
-                                    className="opacity-25"
-                                    cx="12"
-                                    cy="12"
-                                    r="10"
-                                    stroke="currentColor"
-                                    strokeWidth="4"
-                                ></circle>
-                                <path
-                                    className="opacity-75"
-                                    fill="currentColor"
-                                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                                ></path>
-                            </svg>
-                            <div>
-                                <p className="text-blue-800 font-medium">AI Analysis in Progress</p>
-                                <p className="text-blue-600 text-sm mt-1">
-                                    This may take up to 2 minutes depending on resume complexity...
-                                </p>
-                            </div>
+                    <div className="flex flex-col items-center justify-center py-12 space-y-4">
+                        <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                        <div className="text-center">
+                            <p className="text-blue-800 font-medium">AI Analysis in Progress</p>
+                            <p className="text-blue-600 text-sm mt-1">
+                                This may take up to 2 minutes depending on resume complexity...
+                            </p>
                         </div>
                     </div>
                 )}
@@ -299,108 +424,48 @@ export default function Home() {
                             </div>
                         )}
 
-                        {/* Analysis Details */}
-                        <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                            <div className="bg-gray-50 px-6 py-4 border-b border-gray-200">
-                                <h3 className="text-xl font-bold text-gray-900">
-                                    📋 Detailed Analysis Results
-                                </h3>
-                                <p className="text-sm text-gray-600 mt-1">
-                                    Comprehensive AI-powered feedback and recommendations
-                                </p>
+                        {/* Two Column Layout for Analysis and Improvements */}
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                            {/* Analysis Section */}
+                            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                                <div className="bg-blue-50 px-6 py-4 border-b border-gray-200">
+                                    <h3 className="text-xl font-bold text-gray-900">
+                                        🔍 Resume Analysis
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        Current resume assessment and scoring
+                                    </p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="analysis-clean max-w-none">
+                                        <div className="space-y-6">
+                                            {renderAnalysisContent(
+                                                getAnalysisSection(analysis),
+                                                false
+                                            )}
+                                        </div>
+                                    </div>
+                                </div>
                             </div>
-                            <div className="p-6">
-                                <div className="analysis-clean max-w-none">
-                                    <div className="space-y-6">
-                                        {analysis.split("\n").map((line, index) => {
-                                            const trimmedLine = line.trim();
 
-                                            // Skip empty lines
-                                            if (!trimmedLine) return null;
-
-                                            // Main headers - clean and simple
-                                            if (trimmedLine.match(/^\*\*[^:]+:\*\*$/)) {
-                                                const headerText = trimmedLine
-                                                    .replace(/\*\*/g, "")
-                                                    .replace(":", "");
-                                                return (
-                                                    <div
-                                                        key={index}
-                                                        className="mt-8 mb-4 first:mt-0"
-                                                    >
-                                                        <h3 className="text-xl font-semibold text-gray-900 border-b-2 border-gray-200 pb-2">
-                                                            {headerText}
-                                                        </h3>
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Score lines - clean display
-                                            if (trimmedLine.match(/SCORE.*\d+\/100/i)) {
-                                                const match = trimmedLine.match(/(\d+)\/100/);
-                                                const score = match ? parseInt(match[1]) : 0;
-                                                return (
-                                                    <div
-                                                        key={index}
-                                                        className="my-6 p-4 bg-gray-50 rounded-lg border"
-                                                    >
-                                                        <div className="flex items-center justify-between">
-                                                            <span className="text-gray-800 font-medium">
-                                                                ATS Score
-                                                            </span>
-                                                            <div className="flex items-center space-x-2">
-                                                                <span
-                                                                    className={`text-2xl font-bold ${getScoreColor(
-                                                                        score
-                                                                    )}`}
-                                                                >
-                                                                    {score}/100
-                                                                </span>
-                                                                <span
-                                                                    className={`text-sm ${getScoreColor(
-                                                                        score
-                                                                    )}`}
-                                                                >
-                                                                    {getScoreLabel(score)}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Simple bullet points - remove asterisks
-                                            if (trimmedLine.match(/^\*\s+/)) {
-                                                const cleanText = trimmedLine
-                                                    .replace(/^\*\s+/, "")
-                                                    .replace(/\*\*/g, "");
-                                                return (
-                                                    <div key={index} className="ml-4 mb-2">
-                                                        <div className="flex items-start">
-                                                            <span className="text-gray-400 mr-3 mt-1.5 w-1 h-1 bg-gray-400 rounded-full flex-shrink-0"></span>
-                                                            <p className="text-gray-700 leading-relaxed text-sm">
-                                                                {cleanText}
-                                                            </p>
-                                                        </div>
-                                                    </div>
-                                                );
-                                            }
-
-                                            // Regular text - clean and simple
-                                            if (trimmedLine.length > 0) {
-                                                const cleanText = trimmedLine.replace(/\*\*/g, "");
-                                                return (
-                                                    <p
-                                                        key={index}
-                                                        className="text-gray-700 leading-relaxed mb-3"
-                                                    >
-                                                        {cleanText}
-                                                    </p>
-                                                );
-                                            }
-
-                                            return null;
-                                        })}
+                            {/* Improvements Section */}
+                            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
+                                <div className="bg-green-50 px-6 py-4 border-b border-gray-200">
+                                    <h3 className="text-xl font-bold text-gray-900">
+                                        🚀 Improvement Recommendations
+                                    </h3>
+                                    <p className="text-sm text-gray-600 mt-1">
+                                        Actionable tips to boost your ATS score
+                                    </p>
+                                </div>
+                                <div className="p-6">
+                                    <div className="analysis-clean max-w-none">
+                                        <div className="space-y-6">
+                                            {renderAnalysisContent(
+                                                getImprovementSection(analysis),
+                                                true
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
                             </div>

@@ -88,11 +88,13 @@ class AIAnalyzer:
         """Create appropriate prompt based on whether job description is provided"""
         
         if job_description and len(job_description.strip()) > 10:
-            return f"""Analyze this resume against the job description and provide a detailed ATS assessment:
+            return f"""Analyze this resume against the job description and provide a detailed ATS assessment with SPECIFIC, ACTIONABLE improvements based on the EXACT content provided:
 
 RESUME: {resume_text}
 
 JOB DESCRIPTION: {job_description}
+
+IMPORTANT: Quote exact text from the resume when suggesting improvements. Be specific about what to change, add, or remove.
 
 Provide a comprehensive analysis:
 
@@ -111,25 +113,31 @@ Provide a comprehensive analysis:
 - Achievements and quantifiable results
 
 **DETAILED IMPROVEMENT RECOMMENDATIONS:**
-1. [Specific technical skill to add/highlight]
-2. [Resume formatting or structure improvement]
-3. [Content enhancement with examples]
-4. [ATS keyword optimization]
-5. [Professional presentation improvement]
+Based on THIS specific resume, here's how to increase your ATS score:
+
+1. **MISSING KEYWORDS:** Add these specific keywords from the job description: [list 3-5 exact keywords missing from resume]
+2. **SKILLS GAP:** Include these technical skills that you likely have but didn't mention: [specific technologies/tools]
+3. **QUANTIFY ACHIEVEMENTS:** Replace these vague statements with metrics: [quote exact text from resume and suggest specific numbers]
+4. **STRENGTHEN EXPERIENCE:** Rewrite these job descriptions with action verbs: [quote specific lines that need improvement]
+5. **FORMAT FIXES:** These sections need ATS-friendly formatting: [specific formatting issues found]
+6. **SECTION IMPROVEMENTS:** Add/reorganize these sections: [specific structural recommendations]
 
 **ATS OPTIMIZATION GUIDE:**
-- Formatting improvements for better parsing
-- Keyword integration strategies
-- Section organization recommendations
-- Contact information optimization
+Specific improvements for YOUR resume:
+- Replace "[exact text from resume]" with "[improved version]"
+- Add these missing sections: [specific sections needed]
+- Fix these formatting issues: [actual problems found]
+- Integrate these job-specific keywords: [exact keywords to add]
 
 **OVERALL ASSESSMENT:**
 Brief summary of candidacy strength and key areas for improvement."""
         
         else:
-            return f"""Analyze this resume and provide a comprehensive ATS assessment:
+            return f"""Analyze this resume and provide a comprehensive ATS assessment with SPECIFIC improvements based on the EXACT content:
 
 RESUME: {resume_text}
+
+IMPORTANT: Quote actual text from this resume when making suggestions. Provide specific, actionable improvements rather than generic advice.
 
 Provide detailed analysis:
 
@@ -154,21 +162,27 @@ Provide detailed analysis:
 - Contact information and links
 
 **DETAILED IMPROVEMENT PLAN:**
-1. [Technical skills enhancement]
-2. [Experience description improvement]
-3. [Formatting and structure fix]
-4. [Keyword optimization]
-5. [Professional presentation upgrade]
-6. [Additional relevant improvement]
+Based on analyzing YOUR specific resume content:
+
+1. **ADD MISSING SKILLS:** You should highlight these technologies you likely know: [specific tech stack missing]
+2. **IMPROVE DESCRIPTIONS:** Rewrite these weak descriptions: "[quote exact text]" → "[suggested improvement]"
+3. **QUANTIFY RESULTS:** Add metrics to these achievements: "[quote vague statements and suggest specific numbers]"
+4. **KEYWORD OPTIMIZATION:** Include these industry terms: [specific keywords for your field]
+5. **STRUCTURE FIXES:** Reorganize these sections: [specific structural issues found]
+6. **FORMAT IMPROVEMENTS:** Fix these ATS parsing issues: [actual formatting problems identified]
 
 **ATS OPTIMIZATION RECOMMENDATIONS:**
-- Specific formatting changes for better parsing
-- Strategic keyword integration
-- Content restructuring suggestions
-- Professional summary enhancement
+Personalized fixes for your resume:
+- **Line 1 Issue:** "[exact text found]" should be "[improved version]"
+- **Missing Section:** Add a "[specific section name]" section with [specific content]
+- **Keyword Density:** Increase mentions of "[specific skill]" from X to Y times
+- **Format Fix:** Change "[formatting issue]" to "[ATS-friendly format]"
 
 **INDUSTRY-SPECIFIC ADVICE:**
-Tailored recommendations based on apparent career focus and industry standards."""
+Based on your background in [identified field]:
+- Emphasize these domain-specific skills: [relevant to user's experience]
+- Add these industry certifications: [specific to their career path]
+- Include these trending technologies: [relevant to their field]"""
     
     def _should_retry(self, error_msg: str, attempt: int, max_retries: int) -> bool:
         """Determine if we should retry based on error type"""
