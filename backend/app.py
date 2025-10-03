@@ -30,7 +30,7 @@ def create_app():
     # Configure Flask app
     app.config['MAX_CONTENT_LENGTH'] = config.MAX_CONTENT_LENGTH
     
-    # Configure CORS
+    # Configure CORS with explicit settings
     CORS(app, 
          origins=config.CORS_ORIGINS,
          methods=['GET', 'POST', 'OPTIONS'],
@@ -41,13 +41,12 @@ def create_app():
     # Handle preflight OPTIONS requests explicitly
     @app.before_request
     def handle_preflight():
-        from flask import request, jsonify
+        from flask import request, make_response
         if request.method == "OPTIONS":
-            response = jsonify({'status': 'ok'})
-            response.headers.add("Access-Control-Allow-Origin", request.headers.get('Origin', '*'))
-            response.headers.add('Access-Control-Allow-Headers', 'Content-Type,Authorization,X-Requested-With')
-            response.headers.add('Access-Control-Allow-Methods', 'GET,PUT,POST,DELETE,OPTIONS')
-            response.headers.add('Access-Control-Allow-Credentials', 'true')
+            response = make_response()
+            response.headers.add("Access-Control-Allow-Origin", "*")
+            response.headers.add('Access-Control-Allow-Headers', "*")
+            response.headers.add('Access-Control-Allow-Methods', "*")
             return response
     
     # Register blueprints

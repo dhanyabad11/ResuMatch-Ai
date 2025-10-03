@@ -24,8 +24,10 @@ class Config:
     # CORS Configuration
     CORS_ORIGINS = [
         'https://resu-match-ai-three.vercel.app',
+        'https://*.vercel.app',
         'http://localhost:3000',
-        'http://localhost:3001'
+        'http://localhost:3001',
+        'http://127.0.0.1:3000'
     ]
     
     # Gemini API Configuration
