@@ -6,16 +6,26 @@ from flask_cors import cross_origin
 from werkzeug.utils import secure_filename
 import logging
 
-from ..services.pdf_service import PDFProcessor
-from ..services.ai_service import AIAnalyzer
-from ..validators.file_validator import FileValidator
-
 # Create blueprint for API routes
 api_bp = Blueprint('api', __name__)
 
-# Initialize services
-pdf_processor = PDFProcessor()
-ai_analyzer = AIAnalyzer()
+# Initialize services lazily
+pdf_processor = None
+ai_analyzer = None
+
+def get_pdf_processor():
+    global pdf_processor
+    if pdf_processor is None:
+        from ..services.pdf_service import PDFProcessor
+        pdf_processor = PDFProcessor()
+    return pdf_processor
+
+def get_ai_analyzer():
+    global ai_analyzer
+    if ai_analyzer is None:
+        from ..services.ai_service import AIAnalyzer
+        ai_analyzer = AIAnalyzer()
+    return ai_analyzer
 
 @api_bp.route('/')
 @cross_origin()
@@ -55,7 +65,7 @@ def analyze_resume():
             return FileValidator.create_error_response(validation_errors)
         
         # Extract text from PDF
-        success, result = pdf_processor.extract_text_from_pdf(file)
+        success, result = get_pdf_processor().extract_text_from_pdf(file)
         if not success:
             return jsonify({
                 "error": "Failed to process resume",
@@ -66,11 +76,11 @@ def analyze_resume():
         resume_text = result
         
         # Get text statistics for logging
-        text_stats = pdf_processor.get_text_stats(resume_text)
+        text_stats = get_pdf_processor().get_text_stats(resume_text)
         print(f"PDF processed successfully: {text_stats}")
         
         # Perform AI analysis
-        analysis_result = ai_analyzer.analyze_resume(resume_text, job_description)
+        analysis_result = get_ai_analyzer().analyze_resume(resume_text, job_description)
         
         # Check if analysis failed
         if analysis_result.startswith("Error:"):
@@ -132,7 +142,7 @@ def extract_text():
         
         # Extract text using PDF processor
         file.seek(0)  # Reset file pointer
-        success, result = pdf_processor.extract_text_from_pdf(file)
+        success, result = get_pdf_processor().extract_text_from_pdf(file)
         
         if not success:
             return jsonify({
