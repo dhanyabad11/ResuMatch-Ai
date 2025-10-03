@@ -111,6 +111,49 @@ def extract_text():
         # Handle preflight request
         if request.method == 'OPTIONS':
             return '', 200
+            
+        # Get uploaded file
+        if 'resume' not in request.files:
+            return jsonify({
+                "error": "No resume file provided",
+                "message": "Please upload a resume in PDF format"
+            }), 400
+        
+        file = request.files['resume']
+        
+        # Validate file
+        is_valid, validation_errors = FileValidator.validate_upload(file)
+        if not is_valid:
+            return jsonify({
+                "error": "File validation failed",
+                "message": validation_errors[0] if validation_errors else "Invalid file",
+                "details": validation_errors
+            }), 400
+        
+        # Extract text using PDF processor
+        file.seek(0)  # Reset file pointer
+        success, result = pdf_processor.extract_text_from_pdf(file)
+        
+        if not success:
+            return jsonify({
+                "error": "Text extraction failed",
+                "message": result,
+                "details": "Unable to extract text from the uploaded PDF"
+            }), 500
+        
+        return jsonify({
+            "success": True,
+            "extracted_text": result,
+            "message": "Text extracted successfully"
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Error in extract_text endpoint: {str(e)}")
+        return jsonify({
+            "error": "Internal server error",
+            "message": "An unexpected error occurred during text extraction",
+            "details": "Please try again later or contact support"
+        }), 500
 
 @api_bp.route('/validate-file', methods=['POST', 'OPTIONS'])
 @cross_origin()
@@ -123,3 +166,41 @@ def validate_file():
         # Handle preflight request
         if request.method == 'OPTIONS':
             return '', 200
+            
+        # Get uploaded file
+        if 'resume' not in request.files:
+            return jsonify({
+                "error": "No resume file provided",
+                "message": "Please upload a resume in PDF format"
+            }), 400
+        
+        file = request.files['resume']
+        
+        # Validate file
+        is_valid, validation_errors = FileValidator.validate_upload(file)
+        
+        if not is_valid:
+            return jsonify({
+                "success": False,
+                "valid": False,
+                "error": "File validation failed",
+                "message": validation_errors[0] if validation_errors else "Invalid file",
+                "details": validation_errors
+            }), 400
+        
+        return jsonify({
+            "success": True,
+            "valid": True,
+            "message": "File is valid and ready for processing",
+            "filename": secure_filename(file.filename)
+        }), 200
+    
+    except Exception as e:
+        logger.error(f"Error in validate_file endpoint: {str(e)}")
+        return jsonify({
+            "success": False,
+            "valid": False,
+            "error": "Internal server error",
+            "message": "An unexpected error occurred during file validation",
+            "details": "Please try again later or contact support"
+        }), 500

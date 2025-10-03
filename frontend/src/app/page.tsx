@@ -38,55 +38,54 @@ export default function Home() {
     const getAnalysisSection = (text: string): string => {
         const lines = text.split("\n");
         const analysisLines: string[] = [];
-        let inImprovementSection = false;
 
         for (const line of lines) {
-            // Stop at improvement sections
+            // Stop when we hit the separator line or improvement sections
             if (
-                line.match(
-                    /DETAILED IMPROVEMENT|IMPROVEMENT RECOMMENDATIONS|ATS OPTIMIZATION|IMPROVEMENT PLAN/i
-                )
+                line.trim() === "---" ||
+                line.includes("DETAILED IMPROVEMENT") ||
+                line.includes("IMPROVEMENT RECOMMENDATIONS") ||
+                line.includes("IMPROVEMENT PLAN") ||
+                line.includes("ATS OPTIMIZATION")
             ) {
-                inImprovementSection = true;
                 break;
             }
 
-            // Include analysis sections
-            if (
-                line.match(
-                    /ATS SCORE|SKILLS MATCH|EXPERIENCE EVALUATION|TECHNICAL SKILLS|PROFESSIONAL EXPERIENCE|RESUME STRUCTURE/i
-                ) ||
-                !inImprovementSection
-            ) {
-                analysisLines.push(line);
-            }
+            analysisLines.push(line);
         }
 
-        return analysisLines.join("\n");
+        return analysisLines.join("\n").trim();
     };
 
     // Helper function to extract improvement section
     const getImprovementSection = (text: string): string => {
         const lines = text.split("\n");
         const improvementLines: string[] = [];
-        let inImprovementSection = false;
+        let foundSeparator = false;
 
         for (const line of lines) {
-            // Start collecting at improvement sections
+            // Start collecting after we find the separator or improvement section
             if (
-                line.match(
-                    /DETAILED IMPROVEMENT|IMPROVEMENT RECOMMENDATIONS|ATS OPTIMIZATION|IMPROVEMENT PLAN/i
-                )
+                !foundSeparator &&
+                (line.trim() === "---" ||
+                    line.includes("DETAILED IMPROVEMENT") ||
+                    line.includes("IMPROVEMENT RECOMMENDATIONS") ||
+                    line.includes("IMPROVEMENT PLAN") ||
+                    line.includes("ATS OPTIMIZATION"))
             ) {
-                inImprovementSection = true;
+                foundSeparator = true;
+                if (line.trim() !== "---") {
+                    improvementLines.push(line); // Include the header if it's not just the separator
+                }
+                continue;
             }
 
-            if (inImprovementSection) {
+            if (foundSeparator) {
                 improvementLines.push(line);
             }
         }
 
-        return improvementLines.join("\n");
+        return improvementLines.join("\n").trim();
     };
 
     const handleAnalyze = async () => {
