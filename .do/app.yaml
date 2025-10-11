@@ -25,7 +25,7 @@ services:
   
   envs:
   - key: GEMINI_API_KEY
-    value: AIzaSyC0tVab-t4icmkbVHYJRcztUxVh1oxrKV4
+    value: YOUR_GEMINI_API_KEY_HERE
     type: SECRET
   - key: FLASK_ENV
     value: production

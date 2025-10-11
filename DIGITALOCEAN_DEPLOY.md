@@ -25,13 +25,15 @@
      - HTTP Port: `8080`
      - Health Check Path: `/`
 
-4. **Environment Variables** (Already in app.yaml)
+4. **Environment Variables** (Set these in DigitalOcean dashboard)
    ```
-   GEMINI_API_KEY = AIzaSyC0tVab-t4icmkbVHYJRcztUxVh1oxrKV4
+   GEMINI_API_KEY = <your-gemini-api-key>
    FLASK_ENV = production
    PORT = 8080
    PYTHON_VERSION = 3.11.0
    ```
+   
+   ⚠️ **Important**: Never commit your actual API key to Git!
 
 5. **Choose Plan**
    - Select **Basic** ($5/month)
