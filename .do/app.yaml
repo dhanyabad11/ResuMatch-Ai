@@ -1,0 +1,35 @@
+name: resumatch-ai-backend
+region: sgp1
+
+services:
+- name: backend
+  github:
+    repo: dhanyabad11/ResuMatch-Ai
+    branch: main
+    deploy_on_push: true
+  source_dir: /backend
+  environment_slug: python
+  instance_count: 1
+  instance_size_slug: basic-xxs
+  http_port: 8080
+  
+  health_check:
+    http_path: /
+    initial_delay_seconds: 30
+    period_seconds: 10
+    timeout_seconds: 5
+    success_threshold: 1
+    failure_threshold: 3
+  
+  run_command: gunicorn app:app --bind 0.0.0.0:$PORT --timeout 120 --workers 2
+  
+  envs:
+  - key: GEMINI_API_KEY
+    value: AIzaSyC0tVab-t4icmkbVHYJRcztUxVh1oxrKV4
+    type: SECRET
+  - key: FLASK_ENV
+    value: production
+  - key: PORT
+    value: "8080"
+  - key: PYTHON_VERSION
+    value: "3.11.0"
