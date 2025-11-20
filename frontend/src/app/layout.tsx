@@ -11,6 +11,11 @@ const inter = Inter({
 export const metadata: Metadata = {
     title: `${APP_CONFIG.name} - Resume Analyzer`,
     description: APP_CONFIG.description,
+    icons: {
+        icon: "/icon.png",
+        shortcut: "/favicon.ico",
+        apple: "/apple-icon.png",
+    },
 };
 
 export default function RootLayout({
