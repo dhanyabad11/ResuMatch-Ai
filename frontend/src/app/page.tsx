@@ -176,8 +176,8 @@ export default function Home() {
                     <div key={index} className="mt-8 mb-4 first:mt-0">
                         <h3
                             className={`text-xl font-semibold border-b-2 pb-2 ${isImprovement
-                                    ? "text-green-800 border-green-200"
-                                    : "text-gray-900 border-gray-200"
+                                ? "text-green-800 border-green-200"
+                                : "text-gray-900 border-gray-200"
                                 }`}
                         >
                             {headerText}
@@ -232,8 +232,8 @@ export default function Home() {
                         <div className="flex items-start">
                             <span
                                 className={`mr-3 mt-1.5 w-1 h-1 rounded-full flex-shrink-0 ${isImprovement
-                                        ? "text-green-400 bg-green-400"
-                                        : "text-gray-400 bg-gray-400"
+                                    ? "text-green-400 bg-green-400"
+                                    : "text-gray-400 bg-gray-400"
                                     }`}
                             ></span>
                             <p className="text-gray-700 leading-relaxed text-sm">{cleanText}</p>
@@ -261,20 +261,9 @@ export default function Home() {
             {/* Header Section */}
             <header className="border-b border-gray-100 py-4">
                 <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
-                    <div className="flex items-center gap-4">
-                        <div className="relative w-12 h-12">
-                            <Image
-                                src="/icon.png"
-                                alt="ResuMatch AI Logo"
-                                fill
-                                className="object-contain rounded-xl"
-                                priority
-                            />
-                        </div>
-                        <div>
-                            <h1 className="text-2xl font-bold text-black">ResuMatch AI</h1>
-                            <p className="text-sm text-gray-500 mt-1">Upload, Analyze, Optimize</p>
-                        </div>
+                    <div>
+                        <h1 className="text-2xl font-bold text-black">ResuMatch AI</h1>
+                        <p className="text-sm text-gray-500 mt-1">Upload, Analyze, Optimize</p>
                     </div>
                     {(analysis || error || selectedFile) && (
                         <button

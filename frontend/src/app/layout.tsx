@@ -13,7 +13,6 @@ export const metadata: Metadata = {
     description: APP_CONFIG.description,
     icons: {
         icon: "/icon.png",
-        shortcut: "/favicon.ico",
         apple: "/apple-icon.png",
     },
 };
