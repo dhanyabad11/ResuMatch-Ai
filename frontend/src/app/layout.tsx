@@ -12,7 +12,10 @@ export const metadata: Metadata = {
     title: `${APP_CONFIG.name} - Resume Analyzer`,
     description: APP_CONFIG.description,
     icons: {
-        icon: "/icon.png",
+        icon: [
+            { url: "/favicon.png", sizes: "32x32" },
+            { url: "/icon-192.png", sizes: "192x192" },
+        ],
         apple: "/apple-icon.png",
     },
 };
@@ -23,7 +26,7 @@ export default function RootLayout({
     children: React.ReactNode;
 }>) {
     return (
-        <html lang="en">
+        <html lang="en" suppressHydrationWarning>
             <body className={`${inter.variable} antialiased`}>{children}</body>
         </html>
     );

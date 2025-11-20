@@ -11,13 +11,15 @@ body {
     font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
         sans-serif;
     line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
 }
 
-/* Custom animations for smooth interactions */
-@keyframes slide-in-from-bottom {
+/* Custom animations */
+@keyframes fade-in-up {
     from {
         opacity: 0;
-        transform: translateY(20px);
+        transform: translateY(10px);
     }
     to {
         opacity: 1;
@@ -26,169 +28,11 @@ body {
 }
 
 .animate-in {
-    animation: slide-in-from-bottom 0.3s ease-out;
+    animation: fade-in-up 0.5s ease-out forwards;
 }
 
-/* Custom styles for better text rendering */
-* {
-    -webkit-font-smoothing: antialiased;
-    -moz-osx-font-smoothing: grayscale;
-}
-
-/* Focus styles for accessibility */
-button:focus-visible,
-input:focus-visible,
-textarea:focus-visible {
-    outline: 2px solid #3b82f6;
+/* Focus styles */
+*:focus-visible {
+    outline: 2px solid #000;
     outline-offset: 2px;
-}
-
-/* Custom styles for formatted analysis */
-.formatted-analysis {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-        sans-serif;
-    font-size: 14px;
-    line-height: 1.7;
-    max-width: none;
-}
-
-.formatted-analysis h4 {
-    font-size: 16px;
-    font-weight: 700;
-    margin: 24px 0 16px 0;
-}
-
-.formatted-analysis h5 {
-    font-size: 15px;
-    font-weight: 600;
-    margin: 16px 0 8px 0;
-}
-
-.formatted-analysis p {
-    margin-bottom: 12px;
-    color: #374151;
-}
-
-.formatted-analysis ul {
-    margin: 12px 0;
-    padding-left: 0;
-}
-
-.formatted-analysis li {
-    margin-bottom: 8px;
-    display: flex;
-    align-items: flex-start;
-}
-
-/* Enhanced readability for longer text blocks */
-.formatted-analysis .text-block {
-    background: #fafafa;
-    padding: 16px;
-    border-radius: 8px;
-    border-left: 4px solid #e5e7eb;
-    margin: 12px 0;
-}
-
-/* Better spacing for score sections */
-.score-highlight {
-    background: linear-gradient(135deg, #f0f9ff 0%, #e0f2fe 100%);
-    border: 1px solid #bae6fd;
-    padding: 16px;
-    border-radius: 12px;
-    margin: 16px 0;
-}
-
-/* Clean Minimalistic Analysis */
-.analysis-clean {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial,
-        sans-serif;
-    font-size: 15px;
-    line-height: 1.6;
-    color: #374151;
-}
-
-.analysis-clean h3 {
-    font-size: 18px;
-    font-weight: 600;
-    color: #1f2937;
-    margin: 0;
-    padding-bottom: 8px;
-}
-
-.analysis-clean p {
-    font-size: 15px;
-    line-height: 1.6;
-    margin: 0;
-    color: #4b5563;
-}
-
-/* Minimal bullet points */
-.analysis-clean .ml-4 {
-    padding-left: 12px;
-}
-
-/* Clean score display */
-.analysis-clean .bg-gray-50 {
-    background-color: #f9fafb;
-    border: 1px solid #e5e7eb;
-}
-
-/* Simple responsive design */
-@media (max-width: 768px) {
-    .analysis-clean {
-        font-size: 14px;
-    }
-
-    .analysis-clean h3 {
-        font-size: 16px;
-    }
-}
-
-/* Formatted analysis content styling */
-.formatted-analysis-content {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI Improved", "Segoe UI", Roboto,
-        "Helvetica Neue", Arial, sans-serif;
-    font-size: 15px;
-    line-height: 1.6;
-    letter-spacing: 0.01em;
-}
-
-.formatted-analysis-content h4,
-.formatted-analysis-content h5,
-.formatted-analysis-content h6 {
-    font-weight: 600;
-    color: #1f2937;
-}
-
-/* Smooth transitions for interactive elements */
-.formatted-analysis-content > div {
-    transition: all 0.2s ease;
-}
-
-/* Better readability for text content */
-.formatted-analysis-content p {
-    color: #374151;
-    font-size: 15px;
-    line-height: 1.65;
-}
-
-/* Enhanced list styling */
-.formatted-analysis-content ul li {
-    font-size: 14px;
-    line-height: 1.6;
-}
-
-/* Responsive design for mobile */
-@media (max-width: 768px) {
-    .formatted-analysis-content {
-        font-size: 14px;
-    }
-
-    .formatted-analysis-content h4 {
-        font-size: 18px;
-    }
-
-    .formatted-analysis-content h5 {
-        font-size: 16px;
-    }
 }

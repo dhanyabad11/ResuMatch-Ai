@@ -35,57 +35,52 @@ export default function Home() {
         return scoreMatch ? parseInt(scoreMatch[1]) : null;
     };
 
-    // Helper function to extract analysis section (score, skills, experience)
     const getAnalysisSection = (text: string): string => {
         const lines = text.split("\n");
         const analysisLines: string[] = [];
+        const stopMarkers = [
+            "---",
+            "DETAILED IMPROVEMENT",
+            "IMPROVEMENT RECOMMENDATIONS",
+            "IMPROVEMENT PLAN",
+            "ATS OPTIMIZATION",
+            "IMPROVEMENTS"
+        ];
 
         for (const line of lines) {
-            // Stop when we hit the separator line or improvement sections
-            if (
-                line.trim() === "---" ||
-                line.includes("DETAILED IMPROVEMENT") ||
-                line.includes("IMPROVEMENT RECOMMENDATIONS") ||
-                line.includes("IMPROVEMENT PLAN") ||
-                line.includes("ATS OPTIMIZATION")
-            ) {
+            const upperLine = line.trim().toUpperCase();
+            if (stopMarkers.some(marker => upperLine.includes(marker))) {
                 break;
             }
-
             analysisLines.push(line);
         }
-
         return analysisLines.join("\n").trim();
     };
 
-    // Helper function to extract improvement section
     const getImprovementSection = (text: string): string => {
         const lines = text.split("\n");
         const improvementLines: string[] = [];
         let foundSeparator = false;
+        const startMarkers = [
+            "---",
+            "DETAILED IMPROVEMENT",
+            "IMPROVEMENT RECOMMENDATIONS",
+            "IMPROVEMENT PLAN",
+            "ATS OPTIMIZATION",
+            "IMPROVEMENTS"
+        ];
 
         for (const line of lines) {
-            // Start collecting after we find the separator or improvement section
-            if (
-                !foundSeparator &&
-                (line.trim() === "---" ||
-                    line.includes("DETAILED IMPROVEMENT") ||
-                    line.includes("IMPROVEMENT RECOMMENDATIONS") ||
-                    line.includes("IMPROVEMENT PLAN") ||
-                    line.includes("ATS OPTIMIZATION"))
-            ) {
-                foundSeparator = true;
-                if (line.trim() !== "---") {
-                    improvementLines.push(line); // Include the header if it's not just the separator
+            const upperLine = line.trim().toUpperCase();
+
+            if (!foundSeparator) {
+                if (startMarkers.some(marker => upperLine.includes(marker))) {
+                    foundSeparator = true;
                 }
                 continue;
             }
-
-            if (foundSeparator) {
-                improvementLines.push(line);
-            }
+            improvementLines.push(line);
         }
-
         return improvementLines.join("\n").trim();
     };
 
@@ -107,14 +102,12 @@ export default function Home() {
         try {
             const response = await axios.post(getApiUrl("/analyze-resume"), formData, {
                 ...API_CONFIG,
-                timeout: 120000, // 2 minutes timeout for AI analysis
+                timeout: 120000,
             });
 
             if (response.data && response.data.analysis) {
                 const analysisResult = response.data.analysis;
                 setAnalysis(analysisResult);
-
-                // Extract score from analysis
                 const score = extractScore(analysisResult);
                 setMatchScore(score);
             } else {
@@ -122,25 +115,18 @@ export default function Home() {
             }
         } catch (error) {
             console.error("Analysis error:", error);
-
             if (axios.isAxiosError(error)) {
                 if (error.code === "ECONNABORTED") {
-                    setError(
-                        "Analysis timed out. The AI service is taking longer than usual. Please try again."
-                    );
+                    setError("Analysis timed out. Please try again.");
                 } else if (error.response?.status === 413) {
-                    setError("File size too large. Please upload a smaller resume (max 16MB).");
+                    setError("File size too large (max 16MB).");
                 } else if (error.response?.data?.error) {
                     setError(error.response.data.error);
-                } else if (error.message?.includes("Network Error")) {
-                    setError(
-                        "Unable to connect to analysis service. Please check your internet connection and try again."
-                    );
                 } else {
-                    setError("Analysis failed. Please try again in a few moments.");
+                    setError("Analysis failed. Please try again.");
                 }
             } else {
-                setError("Analysis failed. Please try again in a few moments.");
+                setError("Analysis failed. Please try again.");
             }
         } finally {
             setLoading(false);
@@ -148,340 +134,331 @@ export default function Home() {
     };
 
     const getScoreColor = (score: number): string => {
-        if (score >= 80) return "text-green-600";
-        if (score >= 60) return "text-yellow-600";
+        if (score >= 80) return "text-emerald-600";
+        if (score >= 60) return "text-amber-600";
         if (score >= 40) return "text-orange-600";
-        return "text-red-600";
+        return "text-rose-600";
     };
 
     const getScoreLabel = (score: number): string => {
-        if (score >= 85) return "Excellent ATS Match";
-        if (score >= 70) return "Good ATS Match";
-        if (score >= 55) return "Fair ATS Match";
+        if (score >= 85) return "Excellent Match";
+        if (score >= 70) return "Good Match";
+        if (score >= 55) return "Fair Match";
         if (score >= 40) return "Needs Improvement";
-        return "Major Issues";
+        return "Critical Issues";
     };
 
-    const renderAnalysisContent = (content: string, isImprovement: boolean = false) => {
+    const renderAnalysisContent = (content: string) => {
         return content.split("\n").map((line, index) => {
             const trimmedLine = line.trim();
-
-            // Skip empty lines
             if (!trimmedLine) return null;
 
-            // Main headers - clean and simple
+            // Headers
             if (trimmedLine.match(/^\*\*[^:]+:\*\*$/)) {
                 const headerText = trimmedLine.replace(/\*\*/g, "").replace(":", "");
                 return (
-                    <div key={index} className="mt-8 mb-4 first:mt-0">
-                        <h3
-                            className={`text-xl font-semibold border-b-2 pb-2 ${isImprovement
-                                ? "text-green-800 border-green-200"
-                                : "text-gray-900 border-gray-200"
-                                }`}
-                        >
-                            {headerText}
-                        </h3>
-                    </div>
+                    <h3 key={index} className="text-sm font-semibold text-gray-900 uppercase tracking-wider mt-6 mb-3 first:mt-0">
+                        {headerText}
+                    </h3>
                 );
             }
 
-            // Score lines - clean display
-            if (trimmedLine.match(/SCORE.*\d+\/100/i)) {
-                const match = trimmedLine.match(/(\d+)\/100/);
-                const score = match ? parseInt(match[1]) : 0;
+            // Score - skip
+            if (trimmedLine.match(/SCORE.*\d+\/100/i)) return null;
+
+            // Bullet points
+            if (trimmedLine.match(/^[\*\-]\s+/)) {
+                const cleanText = trimmedLine.replace(/^[\*\-]\s+/, "").replace(/\*\*/g, "");
                 return (
-                    <div key={index} className="my-6 p-4 bg-gray-50 rounded-lg border">
-                        <div className="flex items-center justify-between">
-                            <span className="text-gray-800 font-medium">ATS Score</span>
-                            <div className="flex items-center space-x-2">
-                                <span className={`text-2xl font-bold ${getScoreColor(score)}`}>
-                                    {score}/100
-                                </span>
-                                <span className={`text-sm ${getScoreColor(score)}`}>
-                                    {getScoreLabel(score)}
-                                </span>
-                            </div>
-                        </div>
+                    <div key={index} className="flex items-start mb-3 group">
+                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 mr-3 flex-shrink-0 group-hover:scale-125 transition-transform" />
+                        <p className="text-gray-600 leading-relaxed text-sm">{cleanText}</p>
                     </div>
                 );
             }
 
-            // Numbered improvement points (for improvements section)
-            if (isImprovement && trimmedLine.match(/^\d+\.\s+/)) {
+            // Numbered lists
+            if (trimmedLine.match(/^\d+\.\s+/)) {
                 const cleanText = trimmedLine.replace(/\*\*/g, "");
                 return (
-                    <div key={index} className="mb-3">
-                        <div className="flex items-start">
-                            <span className="bg-green-100 text-green-800 text-xs font-semibold px-2 py-1 rounded-full mr-3 mt-0.5 flex-shrink-0">
-                                {trimmedLine.match(/^(\d+)\./)?.[1]}
-                            </span>
-                            <p className="text-gray-700 leading-relaxed text-sm">
-                                {cleanText.replace(/^\d+\.\s+/, "")}
-                            </p>
-                        </div>
+                    <div key={index} className="flex items-start mb-3 group">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-50 text-blue-600 text-xs font-medium mr-3 mt-0.5 flex-shrink-0 group-hover:bg-blue-100 transition-colors">
+                            {trimmedLine.match(/^(\d+)\./)?.[1]}
+                        </span>
+                        <p className="text-gray-600 leading-relaxed text-sm">
+                            {cleanText.replace(/^\d+\.\s+/, "")}
+                        </p>
                     </div>
                 );
             }
 
-            // Simple bullet points - remove asterisks
-            if (trimmedLine.match(/^\*\s+/)) {
-                const cleanText = trimmedLine.replace(/^\*\s+/, "").replace(/\*\*/g, "");
-                return (
-                    <div key={index} className="ml-4 mb-2">
-                        <div className="flex items-start">
-                            <span
-                                className={`mr-3 mt-1.5 w-1 h-1 rounded-full flex-shrink-0 ${isImprovement
-                                    ? "text-green-400 bg-green-400"
-                                    : "text-gray-400 bg-gray-400"
-                                    }`}
-                            ></span>
-                            <p className="text-gray-700 leading-relaxed text-sm">{cleanText}</p>
-                        </div>
-                    </div>
-                );
-            }
-
-            // Regular text - clean and simple
-            if (trimmedLine.length > 0) {
-                const cleanText = trimmedLine.replace(/\*\*/g, "");
-                return (
-                    <p key={index} className="text-gray-700 leading-relaxed mb-3">
-                        {cleanText}
-                    </p>
-                );
-            }
-
-            return null;
+            return (
+                <p key={index} className="text-gray-600 leading-relaxed mb-3 text-sm">
+                    {trimmedLine.replace(/\*\*/g, "")}
+                </p>
+            );
         });
     };
 
+    const renderImprovementContent = (content: string) => {
+        // Split by double newlines or lines that look like headers/bullets
+        const points = content
+            .split(/\n\n|\n(?=[A-Z ]+:|\d+\.|-|\*)/)
+            .filter(p => p.trim().length > 0);
+
+        return (
+            <div className="space-y-4">
+                {points.map((point, index) => {
+                    const cleanPoint = point.replace(/^\d+\.\s+|-\s+|\*\s+/, "").replace(/\*\*/g, "").trim();
+                    // Skip empty or purely separator lines
+                    if (!cleanPoint || cleanPoint.match(/^[-=_*]+$/)) return null;
+
+                    // Check if it's a section header (like "ATS OPTIMIZATION RECOMMENDATIONS")
+                    if (cleanPoint.toUpperCase() === cleanPoint && cleanPoint.length < 50 && !cleanPoint.includes(":")) {
+                        return (
+                            <h4 key={index} className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-6 mb-2">
+                                {cleanPoint}
+                            </h4>
+                        );
+                    }
+
+                    return (
+                        <div key={index} className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 hover:shadow-sm transition-shadow">
+                            <div className="flex items-start gap-3">
+                                <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                    <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7" />
+                                    </svg>
+                                </div>
+                                <div className="flex-1">
+                                    {cleanPoint.includes(":") ? (
+                                        <>
+                                            <span className="block font-semibold text-gray-900 text-sm mb-1">
+                                                {cleanPoint.split(":")[0]}:
+                                            </span>
+                                            <p className="text-gray-700 text-sm leading-relaxed">
+                                                {cleanPoint.substring(cleanPoint.indexOf(":") + 1).trim()}
+                                            </p>
+                                        </>
+                                    ) : (
+                                        <p className="text-gray-700 text-sm leading-relaxed">{cleanPoint}</p>
+                                    )}
+                                </div>
+                            </div>
+                        </div>
+                    );
+                })}
+            </div>
+        );
+    };
+
     return (
-        <div className="min-h-screen bg-white">
-            {/* Header Section */}
-            <header className="border-b border-gray-100 py-4">
-                <div className="max-w-6xl mx-auto px-6 flex justify-between items-center">
-                    <div>
-                        <h1 className="text-2xl font-bold text-black">ResuMatch AI</h1>
-                        <p className="text-sm text-gray-500 mt-1">Upload, Analyze, Optimize</p>
+        <div className="min-h-screen bg-white selection:bg-gray-900 selection:text-white">
+            {/* Sticky Header */}
+            <header className="sticky top-0 z-50 bg-white/80 backdrop-blur-md border-b border-gray-100">
+                <div className="max-w-5xl mx-auto px-6 h-16 flex justify-between items-center">
+                    <div className="flex items-center gap-3">
+                        <div className="relative w-8 h-8">
+                            <Image
+                                src="/icon-192.png"
+                                alt="ResuMatch AI Logo"
+                                fill
+                                className="object-contain rounded-lg"
+                                priority
+                            />
+                        </div>
+                        <h1 className="text-xl font-bold tracking-tight text-gray-900">ResuMatch AI</h1>
                     </div>
                     {(analysis || error || selectedFile) && (
                         <button
                             onClick={handleReset}
-                            className="text-sm text-gray-500 hover:text-gray-700 border border-gray-200 px-4 py-2 rounded-md hover:bg-gray-50 transition-colors"
+                            className="text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
                         >
-                            Reset
+                            Start Over
                         </button>
                     )}
                 </div>
             </header>
 
-            <div className="max-w-6xl mx-auto px-6 py-12">
-                {/* Upload Section */}
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-                    {/* Resume Upload */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-black">Resume</h3>
-                        <div
-                            className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-gray-400 transition-colors cursor-pointer"
-                            onDragOver={(e) => e.preventDefault()}
-                            onDrop={(e) => {
-                                e.preventDefault();
-                                const files = e.dataTransfer.files;
-                                if (files && files[0]) {
-                                    setSelectedFile(files[0]);
-                                    setError("");
-                                }
-                            }}
-                        >
-                            <input
-                                type="file"
-                                accept=".pdf"
-                                onChange={handleFileChange}
-                                className="hidden"
-                                id="resume-upload"
-                            />
-                            <label htmlFor="resume-upload" className="cursor-pointer">
-                                <div className="space-y-3">
-                                    <div className="w-12 h-12 mx-auto text-gray-400">
-                                        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path
-                                                strokeLinecap="round"
-                                                strokeLinejoin="round"
-                                                strokeWidth="2"
-                                                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                                            />
-                                        </svg>
-                                    </div>
-                                    <div>
-                                        <p className="text-gray-700 font-medium">
-                                            Drop your resume here or click to browse
-                                        </p>
-                                        <p className="text-gray-500 text-sm mt-1">PDF files only</p>
-                                    </div>
-                                </div>
-                            </label>
-                        </div>
-                        {selectedFile && (
-                            <div className="flex items-center space-x-3 p-3 bg-gray-50 rounded-md">
-                                <div className="w-8 h-8 text-red-600">
-                                    <svg fill="currentColor" viewBox="0 0 24 24">
-                                        <path d="M7 18h10v-1H7v1zM7 16h10v-1H7v1zM7 14h10v-1H7v1zM7 12h10v-1H7v1zM7 10h7V9H7v1z" />
-                                    </svg>
-                                </div>
-                                <div className="flex-1">
-                                    <p className="text-sm font-medium text-gray-900">
-                                        {selectedFile.name}
-                                    </p>
-                                    <p className="text-xs text-gray-500">
-                                        {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
-                                    </p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
-
-                    {/* Job Description */}
-                    <div className="space-y-4">
-                        <h3 className="text-lg font-semibold text-black">
-                            Job Description{" "}
-                            <span className="text-gray-400 font-normal">(Optional)</span>
-                        </h3>
-                        <textarea
-                            value={jobDescription}
-                            onChange={(e) => setJobDescription(e.target.value)}
-                            placeholder="Paste the job description here for targeted analysis..."
-                            className="w-full h-48 p-4 border border-gray-300 rounded-lg resize-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm"
-                        />
-                        <p className="text-xs text-gray-500">
-                            Adding a job description will provide more targeted feedback and scoring
+            <main className="max-w-5xl mx-auto px-6 py-12 md:py-20">
+                {!analysis && !loading && (
+                    <div className="max-w-2xl mx-auto text-center mb-16 animate-in">
+                        <h2 className="text-4xl md:text-5xl font-bold text-gray-900 tracking-tight mb-6">
+                            Optimize your resume for ATS.
+                        </h2>
+                        <p className="text-lg text-gray-500 leading-relaxed">
+                            Upload your resume and job description to get instant, AI-powered feedback and increase your chances of getting hired.
                         </p>
                     </div>
-                </div>
+                )}
 
-                {/* Analyze Button */}
-                <div className="text-center mb-12">
-                    <button
-                        onClick={handleAnalyze}
-                        disabled={!selectedFile || loading}
-                        className="bg-black text-white px-8 py-3 rounded-lg font-medium hover:bg-gray-800 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                    >
-                        {loading ? "Analyzing..." : "Analyze Resume"}
-                    </button>
-                </div>
-
-                {/* Loading State */}
-                {loading && (
-                    <div className="flex flex-col items-center justify-center py-12 space-y-4">
-                        <div className="w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
-                        <div className="text-center">
-                            <p className="text-blue-800 font-medium">AI Analysis in Progress</p>
-                            <p className="text-blue-600 text-sm mt-1">
-                                This may take up to 2 minutes depending on resume complexity...
-                            </p>
+                <div className={`grid grid-cols-1 gap-8 transition-all duration-500 ${analysis ? 'lg:grid-cols-12' : 'max-w-2xl mx-auto'}`}>
+                    {/* Input Section */}
+                    <div className={`space-y-6 ${analysis ? 'lg:col-span-4' : 'w-full'}`}>
+                        {/* Resume Upload */}
+                        <div className="group relative">
+                            <div
+                                className={`relative border-2 border-dashed rounded-2xl p-8 text-center transition-all duration-200 ${selectedFile
+                                    ? "border-gray-300 bg-gray-50"
+                                    : "border-gray-200 hover:border-gray-400 hover:bg-gray-50"
+                                    }`}
+                                onDragOver={(e) => e.preventDefault()}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    const files = e.dataTransfer.files;
+                                    if (files && files[0]) {
+                                        setSelectedFile(files[0]);
+                                        setError("");
+                                    }
+                                }}
+                            >
+                                <input
+                                    type="file"
+                                    accept=".pdf"
+                                    onChange={handleFileChange}
+                                    className="hidden"
+                                    id="resume-upload"
+                                />
+                                <label htmlFor="resume-upload" className="cursor-pointer block">
+                                    {selectedFile ? (
+                                        <div className="flex items-center justify-center gap-3">
+                                            <div className="w-10 h-10 rounded-full bg-white border border-gray-200 flex items-center justify-center text-rose-500 shadow-sm">
+                                                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                                </svg>
+                                            </div>
+                                            <div className="text-left">
+                                                <p className="text-sm font-medium text-gray-900 truncate max-w-[200px]">
+                                                    {selectedFile.name}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                    {(selectedFile.size / 1024 / 1024).toFixed(2)} MB
+                                                </p>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <div className="space-y-3">
+                                            <div className="w-12 h-12 mx-auto rounded-full bg-gray-100 flex items-center justify-center text-gray-400 group-hover:scale-110 transition-transform">
+                                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                                                </svg>
+                                            </div>
+                                            <div>
+                                                <p className="text-sm font-medium text-gray-900">Upload Resume</p>
+                                                <p className="text-xs text-gray-500 mt-1">PDF up to 16MB</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                </label>
+                            </div>
                         </div>
-                    </div>
-                )}
 
-                {/* Error Message */}
-                {error && (
-                    <div className="mb-8 p-4 bg-red-50 border border-red-200 rounded-md">
-                        <p className="text-red-800">{error}</p>
-                    </div>
-                )}
+                        {/* Job Description */}
+                        <div className="relative">
+                            <textarea
+                                value={jobDescription}
+                                onChange={(e) => setJobDescription(e.target.value)}
+                                placeholder="Paste job description (optional)..."
+                                className="w-full h-32 p-4 bg-white border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:border-gray-900 focus:ring-0 transition-colors resize-none"
+                            />
+                        </div>
 
-                {/* Results Section */}
-                {analysis && (
-                    <div className="space-y-8 animate-in slide-in-from-bottom-4 duration-500">
-                        {/* Score Card */}
-                        {matchScore !== null && (
-                            <div className="bg-white border border-gray-200 rounded-lg p-6 text-center">
-                                <div className="flex items-center justify-center space-x-8">
-                                    <div>
-                                        <div
-                                            className={`text-4xl font-bold ${getScoreColor(
-                                                matchScore
-                                            )}`}
-                                        >
-                                            {matchScore}/100
-                                        </div>
-                                        <p className="text-sm text-gray-500 mt-1">ATS Score</p>
-                                    </div>
-                                    <div className="h-12 w-px bg-gray-200"></div>
-                                    <div>
-                                        <div
-                                            className={`text-lg font-semibold ${getScoreColor(
-                                                matchScore
-                                            )}`}
-                                        >
-                                            {getScoreLabel(matchScore)}
-                                        </div>
-                                        <p className="text-sm text-gray-500 mt-1">Assessment</p>
-                                    </div>
-                                </div>
+                        {/* Analyze Button */}
+                        <button
+                            onClick={handleAnalyze}
+                            disabled={!selectedFile || loading}
+                            className="w-full bg-gray-900 text-white h-12 rounded-xl font-medium hover:bg-black disabled:bg-gray-200 disabled:text-gray-400 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md active:scale-[0.98]"
+                        >
+                            {loading ? (
+                                <span className="flex items-center justify-center gap-2">
+                                    <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    Analyzing...
+                                </span>
+                            ) : (
+                                "Analyze Resume"
+                            )}
+                        </button>
+
+                        {error && (
+                            <div className="p-4 bg-rose-50 text-rose-600 text-sm rounded-xl border border-rose-100">
+                                {error}
                             </div>
                         )}
-
-                        {/* Two Column Layout for Analysis and Improvements */}
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                            {/* Analysis Section */}
-                            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                                <div className="bg-blue-50 px-6 py-4 border-b border-gray-200">
-                                    <h3 className="text-xl font-bold text-gray-900">
-                                        🔍 Resume Analysis
-                                    </h3>
-                                    <p className="text-sm text-gray-600 mt-1">
-                                        Current resume assessment and scoring
-                                    </p>
-                                </div>
-                                <div className="p-6">
-                                    <div className="analysis-clean max-w-none">
-                                        <div className="space-y-6">
-                                            {renderAnalysisContent(
-                                                getAnalysisSection(analysis),
-                                                false
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Improvements Section */}
-                            <div className="bg-white border border-gray-200 rounded-lg overflow-hidden">
-                                <div className="bg-green-50 px-6 py-4 border-b border-gray-200">
-                                    <h3 className="text-xl font-bold text-gray-900">
-                                        🚀 Improvement Recommendations
-                                    </h3>
-                                    <p className="text-sm text-gray-600 mt-1">
-                                        Actionable tips to boost your ATS score
-                                    </p>
-                                </div>
-                                <div className="p-6">
-                                    <div className="analysis-clean max-w-none">
-                                        <div className="space-y-6">
-                                            {renderAnalysisContent(
-                                                getImprovementSection(analysis),
-                                                true
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {/* Re-analyze Button */}
-                        <div className="text-center">
-                            <button
-                                onClick={handleAnalyze}
-                                disabled={loading}
-                                className="text-blue-600 hover:text-blue-700 font-medium border border-blue-200 hover:border-blue-300 px-6 py-2 rounded-md transition-colors"
-                            >
-                                Re-Analyze
-                            </button>
-                        </div>
                     </div>
-                )}
-            </div>
+
+                    {/* Results Section */}
+                    {analysis && (
+                        <div className="lg:col-span-8 space-y-6 animate-in">
+                            {/* Score Card */}
+                            {matchScore !== null && (
+                                <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8">
+                                    <div className="text-center md:text-left">
+                                        <p className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">ATS Compatibility</p>
+                                        <h3 className={`text-2xl font-bold ${getScoreColor(matchScore)}`}>
+                                            {getScoreLabel(matchScore)}
+                                        </h3>
+                                    </div>
+                                    <div className="relative w-32 h-32 flex items-center justify-center">
+                                        <svg className="w-full h-full transform -rotate-90">
+                                            <circle cx="64" cy="64" r="60" stroke="currentColor" strokeWidth="8" fill="none" className="text-gray-100" />
+                                            <circle
+                                                cx="64"
+                                                cy="64"
+                                                r="60"
+                                                stroke="currentColor"
+                                                strokeWidth="8"
+                                                fill="none"
+                                                strokeDasharray={377}
+                                                strokeDashoffset={377 - (377 * matchScore) / 100}
+                                                className={`${getScoreColor(matchScore)} transition-all duration-1000 ease-out`}
+                                                strokeLinecap="round"
+                                            />
+                                        </svg>
+                                        <span className={`absolute text-3xl font-bold ${getScoreColor(matchScore)}`}>
+                                            {matchScore}
+                                        </span>
+                                    </div>
+                                </div>
+                            )}
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                {/* Analysis Column */}
+                                <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-50">
+                                        <div className="w-8 h-8 rounded-full bg-blue-50 flex items-center justify-center text-blue-600">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="font-semibold text-gray-900">Analysis</h3>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {renderAnalysisContent(getAnalysisSection(analysis))}
+                                    </div>
+                                </div>
+
+                                {/* Improvements Column */}
+                                <div className="bg-white border border-gray-100 rounded-2xl p-6 shadow-sm">
+                                    <div className="flex items-center gap-2 mb-6 pb-4 border-b border-gray-50">
+                                        <div className="w-8 h-8 rounded-full bg-emerald-50 flex items-center justify-center text-emerald-600">
+                                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
+                                            </svg>
+                                        </div>
+                                        <h3 className="font-semibold text-gray-900">Improvements</h3>
+                                    </div>
+                                    <div className="space-y-4">
+                                        {renderImprovementContent(getImprovementSection(analysis))}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </main>
         </div>
     );
 }
