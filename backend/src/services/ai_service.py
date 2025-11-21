@@ -22,11 +22,11 @@ class AIAnalyzer:
         
         # Initialize model with configuration
         self.model = genai.GenerativeModel(
-            'gemini-2.5-flash',
+            'models/gemini-2.5-flash',
             generation_config=config.GENERATION_CONFIG
         )
     
-    def analyze_resume(self, resume_text: str, job_description: str = "", max_retries: int = None) -> str:
+    def analyze_resume(self, resume_text: str, job_description: str = "", max_retries: int = None) -> dict:
         """
         Analyze resume using Google Gemini API with retry logic
         
@@ -36,14 +36,14 @@ class AIAnalyzer:
             max_retries: Maximum number of retry attempts
             
         Returns:
-            Analysis result or error message
+            Dictionary containing analysis results or error message
         """
         if max_retries is None:
             max_retries = config.MAX_RETRIES
         
         # Validate inputs
         if not resume_text or len(resume_text.strip()) < 50:
-            return "Error: Resume content is too short or empty. Please upload a complete resume."
+            return {"error": "Resume content is too short or empty. Please upload a complete resume."}
         
         print(f"Starting AI analysis with {len(resume_text)} characters of resume text")
         if job_description:
@@ -64,7 +64,9 @@ class AIAnalyzer:
                 
                 if response and response.text:
                     print(f"Analysis completed successfully on attempt {attempt + 1}")
-                    return self._post_process_response(response.text)
+                    result = self._post_process_response(response.text)
+                    print(f"Post-process result type: {type(result)}")
+                    return result
                 else:
                     raise Exception("Empty response from AI model")
                     
@@ -80,109 +82,71 @@ class AIAnalyzer:
                     time.sleep(wait_time)
                     continue
                 else:
-                    return self._handle_error(error_msg, attempt, max_retries)
+                    result = self._handle_error(error_msg, attempt, max_retries)
+                    print(f"Returning error dict: {result}")
+                    return {"error": result}
         
-        return "Error: Unable to process resume after multiple attempts. Please try again later."
+        print("Returning final error dict")
+        return {"error": "Unable to process resume after multiple attempts. Please try again later."}
     
     def _create_prompt(self, resume_text: str, job_description: str) -> str:
         """Create appropriate prompt based on whether job description is provided"""
         
+        base_prompt = """You are an expert ATS (Applicant Tracking System) optimizer and career coach. 
+Analyze the provided resume and return a JSON object with the following structure:
+{
+    "ats_score": number (0-100),
+    "fit_analysis": "string (markdown supported)",
+    "improvement_tips": ["string", "string", ...]
+}
+
+IMPORTANT: Return ONLY the raw JSON object. Do not include markdown formatting like ```json ... ```.
+"""
+        
         if job_description and len(job_description.strip()) > 10:
-            return f"""Analyze this resume against the job description and provide a detailed ATS assessment with SPECIFIC, ACTIONABLE improvements based on the EXACT content provided:
+            return f"""{base_prompt}
+Analyze this resume against the job description.
 
-RESUME: {resume_text}
+RESUME:
+{resume_text}
 
-JOB DESCRIPTION: {job_description}
+JOB DESCRIPTION:
+{job_description}
 
-IMPORTANT: Quote exact text from the resume when suggesting improvements. Be specific about what to change, add, or remove.
+INSTRUCTIONS:
+1. "ats_score": Evaluate how well the resume matches the job description.
+2. "fit_analysis": detailed analysis of how the candidate fits the role. Use markdown for formatting (bolding, lists).
+   - Mention matching skills.
+   - Mention experience alignment.
+   - Mention missing critical keywords.
+3. "improvement_tips": A list of concise, actionable tips to improve the ATS score. 
+   - Focus on specific keywords to add.
+   - Focus on formatting changes.
+   - Focus on quantifying achievements.
 
-Provide a comprehensive analysis:
-
-**ATS SCORE: X/100**
-
-**SKILLS MATCH ANALYSIS:**
-- Technical skills alignment (be specific about technologies)
-- Experience level match (junior/mid/senior requirements)
-- Domain expertise relevance
-- Missing critical skills/keywords
-
-**EXPERIENCE EVALUATION:**
-- Project complexity and relevance
-- Professional experience alignment
-- Education background fit
-- Achievements and quantifiable results
-
-**DETAILED IMPROVEMENT RECOMMENDATIONS:**
-Based on THIS specific resume, here's how to increase your ATS score:
-
-1. **MISSING KEYWORDS:** Add these specific keywords from the job description: [list 3-5 exact keywords missing from resume]
-2. **SKILLS GAP:** Include these technical skills that you likely have but didn't mention: [specific technologies/tools]
-3. **QUANTIFY ACHIEVEMENTS:** Replace these vague statements with metrics: [quote exact text from resume and suggest specific numbers]
-4. **STRENGTHEN EXPERIENCE:** Rewrite these job descriptions with action verbs: [quote specific lines that need improvement]
-5. **FORMAT FIXES:** These sections need ATS-friendly formatting: [specific formatting issues found]
-6. **SECTION IMPROVEMENTS:** Add/reorganize these sections: [specific structural recommendations]
-
-**ATS OPTIMIZATION GUIDE:**
-Specific improvements for YOUR resume:
-- Replace "[exact text from resume]" with "[improved version]"
-- Add these missing sections: [specific sections needed]
-- Fix these formatting issues: [actual problems found]
-- Integrate these job-specific keywords: [exact keywords to add]
-
-**OVERALL ASSESSMENT:**
-Brief summary of candidacy strength and key areas for improvement."""
+Return ONLY valid JSON.
+"""
         
         else:
-            return f"""Analyze this resume and provide a comprehensive ATS assessment with SPECIFIC improvements based on the EXACT content:
+            return f"""{base_prompt}
+Analyze this resume for general ATS best practices.
 
-RESUME: {resume_text}
+RESUME:
+{resume_text}
 
-IMPORTANT: Quote actual text from this resume when making suggestions. Provide specific, actionable improvements rather than generic advice.
+INSTRUCTIONS:
+1. "ats_score": Evaluate the resume's general ATS friendliness and strength.
+2. "fit_analysis": detailed analysis of the resume's strength. Use markdown.
+   - Evaluate skills presentation.
+   - Evaluate experience descriptions.
+   - Evaluate formatting and structure.
+3. "improvement_tips": A list of concise, actionable tips to improve the ATS score.
+   - Focus on general best practices.
+   - Focus on formatting.
+   - Focus on impact and metrics.
 
-Provide detailed analysis:
-
-**ATS SCORE: X/100**
-
-**TECHNICAL SKILLS ANALYSIS:**
-- Programming languages and frameworks identified
-- Technical skill level assessment
-- Missing in-demand technologies
-- Skill presentation effectiveness
-
-**PROFESSIONAL EXPERIENCE REVIEW:**
-- Work experience quality and relevance
-- Project descriptions and achievements
-- Quantifiable results and impact
-- Career progression demonstration
-
-**RESUME STRUCTURE & FORMATTING:**
-- ATS-friendly formatting assessment
-- Section organization and hierarchy
-- Keyword density and placement
-- Contact information and links
-
-**DETAILED IMPROVEMENT PLAN:**
-Based on analyzing YOUR specific resume content:
-
-1. **ADD MISSING SKILLS:** You should highlight these technologies you likely know: [specific tech stack missing]
-2. **IMPROVE DESCRIPTIONS:** Rewrite these weak descriptions: "[quote exact text]" → "[suggested improvement]"
-3. **QUANTIFY RESULTS:** Add metrics to these achievements: "[quote vague statements and suggest specific numbers]"
-4. **KEYWORD OPTIMIZATION:** Include these industry terms: [specific keywords for your field]
-5. **STRUCTURE FIXES:** Reorganize these sections: [specific structural issues found]
-6. **FORMAT IMPROVEMENTS:** Fix these ATS parsing issues: [actual formatting problems identified]
-
-**ATS OPTIMIZATION RECOMMENDATIONS:**
-Personalized fixes for your resume:
-- **Line 1 Issue:** "[exact text found]" should be "[improved version]"
-- **Missing Section:** Add a "[specific section name]" section with [specific content]
-- **Keyword Density:** Increase mentions of "[specific skill]" from X to Y times
-- **Format Fix:** Change "[formatting issue]" to "[ATS-friendly format]"
-
-**INDUSTRY-SPECIFIC ADVICE:**
-Based on your background in [identified field]:
-- Emphasize these domain-specific skills: [relevant to user's experience]
-- Add these industry certifications: [specific to their career path]
-- Include these trending technologies: [relevant to their field]"""
+Return ONLY valid JSON.
+"""
     
     def _should_retry(self, error_msg: str, attempt: int, max_retries: int) -> bool:
         """Determine if we should retry based on error type"""
@@ -212,16 +176,34 @@ Based on your background in [identified field]:
             else:
                 return f"Error: {error_msg}"
     
-    def _post_process_response(self, response_text: str) -> str:
+    def _post_process_response(self, response_text: str) -> dict:
         """Clean and format the AI response"""
+        import json
+        import re
+        
         if not response_text:
-            return "Error: Empty response from AI service."
+            return {"error": "Empty response from AI service."}
         
-        # Remove any unwanted characters or formatting issues
-        cleaned_response = response_text.strip()
-        
-        # Ensure the response has proper structure
-        if "ATS SCORE:" not in cleaned_response:
-            return f"**ATS SCORE: 75/100**\n\n{cleaned_response}"
-        
-        return cleaned_response
+        try:
+            # Try to find JSON block if it's wrapped in markdown code blocks
+            json_match = re.search(r'```json\s*(.*?)\s*```', response_text, re.DOTALL)
+            if json_match:
+                json_str = json_match.group(1)
+            else:
+                # If no code block, try to find the first { and last }
+                json_match = re.search(r'\{.*\}', response_text, re.DOTALL)
+                if json_match:
+                    json_str = json_match.group(0)
+                else:
+                    json_str = response_text
+            
+            return json.loads(json_str)
+            
+        except json.JSONDecodeError:
+            print(f"Failed to parse JSON response: {response_text}")
+            # Fallback for failed JSON parsing
+            return {
+                "ats_score": 0,
+                "fit_analysis": "Error parsing analysis results. However, here is the raw output:\n\n" + response_text,
+                "improvement_tips": ["Could not parse specific improvements."]
+            }

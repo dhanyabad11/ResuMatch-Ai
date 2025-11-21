@@ -5,13 +5,18 @@ import axios from "axios";
 import { getApiUrl, API_CONFIG } from "@/lib/config";
 import Image from "next/image";
 
+interface AnalysisResult {
+    ats_score: number;
+    fit_analysis: string;
+    improvement_tips: string[];
+}
+
 export default function Home() {
     const [selectedFile, setSelectedFile] = useState<File | null>(null);
     const [jobDescription, setJobDescription] = useState("");
-    const [analysis, setAnalysis] = useState("");
+    const [analysis, setAnalysis] = useState<AnalysisResult | null>(null);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState("");
-    const [matchScore, setMatchScore] = useState<number | null>(null);
 
     const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files[0]) {
@@ -23,65 +28,8 @@ export default function Home() {
     const handleReset = () => {
         setSelectedFile(null);
         setJobDescription("");
-        setAnalysis("");
+        setAnalysis(null);
         setError("");
-        setMatchScore(null);
-    };
-
-    const extractScore = (analysisText: string): number | null => {
-        const scoreMatch = analysisText.match(
-            /(?:OVERALL ATS SCORE|ATS SCORE|OVERALL SCORE|SCORE):\s*(\d+)\/100/i
-        );
-        return scoreMatch ? parseInt(scoreMatch[1]) : null;
-    };
-
-    const getAnalysisSection = (text: string): string => {
-        const lines = text.split("\n");
-        const analysisLines: string[] = [];
-        const stopMarkers = [
-            "---",
-            "DETAILED IMPROVEMENT",
-            "IMPROVEMENT RECOMMENDATIONS",
-            "IMPROVEMENT PLAN",
-            "ATS OPTIMIZATION",
-            "IMPROVEMENTS"
-        ];
-
-        for (const line of lines) {
-            const upperLine = line.trim().toUpperCase();
-            if (stopMarkers.some(marker => upperLine.includes(marker))) {
-                break;
-            }
-            analysisLines.push(line);
-        }
-        return analysisLines.join("\n").trim();
-    };
-
-    const getImprovementSection = (text: string): string => {
-        const lines = text.split("\n");
-        const improvementLines: string[] = [];
-        let foundSeparator = false;
-        const startMarkers = [
-            "---",
-            "DETAILED IMPROVEMENT",
-            "IMPROVEMENT RECOMMENDATIONS",
-            "IMPROVEMENT PLAN",
-            "ATS OPTIMIZATION",
-            "IMPROVEMENTS"
-        ];
-
-        for (const line of lines) {
-            const upperLine = line.trim().toUpperCase();
-
-            if (!foundSeparator) {
-                if (startMarkers.some(marker => upperLine.includes(marker))) {
-                    foundSeparator = true;
-                }
-                continue;
-            }
-            improvementLines.push(line);
-        }
-        return improvementLines.join("\n").trim();
     };
 
     const handleAnalyze = async () => {
@@ -92,8 +40,7 @@ export default function Home() {
 
         setLoading(true);
         setError("");
-        setAnalysis("");
-        setMatchScore(null);
+        setAnalysis(null);
 
         const formData = new FormData();
         formData.append("resume", selectedFile);
@@ -106,10 +53,7 @@ export default function Home() {
             });
 
             if (response.data && response.data.analysis) {
-                const analysisResult = response.data.analysis;
-                setAnalysis(analysisResult);
-                const score = extractScore(analysisResult);
-                setMatchScore(score);
+                setAnalysis(response.data.analysis);
             } else {
                 setError("Analysis completed but no results returned. Please try again.");
             }
@@ -133,14 +77,16 @@ export default function Home() {
         }
     };
 
-    const getScoreColor = (score: number): string => {
+    const getScoreColor = (score: number | undefined): string => {
+        if (!score || isNaN(score)) return "text-gray-400";
         if (score >= 80) return "text-emerald-600";
         if (score >= 60) return "text-amber-600";
         if (score >= 40) return "text-orange-600";
         return "text-rose-600";
     };
 
-    const getScoreLabel = (score: number): string => {
+    const getScoreLabel = (score: number | undefined): string => {
+        if (!score || isNaN(score)) return "Analyzing...";
         if (score >= 85) return "Excellent Match";
         if (score >= 70) return "Good Match";
         if (score >= 55) return "Fair Match";
@@ -149,22 +95,21 @@ export default function Home() {
     };
 
     const renderAnalysisContent = (content: string) => {
+        if (!content) return <p className="text-gray-500 text-sm">No analysis available.</p>;
+
         return content.split("\n").map((line, index) => {
             const trimmedLine = line.trim();
             if (!trimmedLine) return null;
 
-            // Headers
-            if (trimmedLine.match(/^\*\*[^:]+:\*\*$/)) {
-                const headerText = trimmedLine.replace(/\*\*/g, "").replace(":", "");
+            // Headers (Markdown style **Header**)
+            if (trimmedLine.match(/^\*\*[^:]+:\*\*$/) || trimmedLine.match(/^##\s+/)) {
+                const headerText = trimmedLine.replace(/\*\*/g, "").replace(":", "").replace(/^##\s+/, "");
                 return (
                     <h3 key={index} className="text-sm font-semibold text-gray-900 uppercase tracking-wider mt-6 mb-3 first:mt-0">
                         {headerText}
                     </h3>
                 );
             }
-
-            // Score - skip
-            if (trimmedLine.match(/SCORE.*\d+\/100/i)) return null;
 
             // Bullet points
             if (trimmedLine.match(/^[\*\-]\s+/)) {
@@ -200,27 +145,16 @@ export default function Home() {
         });
     };
 
-    const renderImprovementContent = (content: string) => {
-        // Split by double newlines or lines that look like headers/bullets
-        const points = content
-            .split(/\n\n|\n(?=[A-Z ]+:|\d+\.|-|\*)/)
-            .filter(p => p.trim().length > 0);
+    const renderImprovementContent = (tips: string[]) => {
+        if (!tips || tips.length === 0) {
+            return <p className="text-gray-500 text-sm">No improvement tips available.</p>;
+        }
 
         return (
             <div className="space-y-4">
-                {points.map((point, index) => {
+                {tips.map((point, index) => {
                     const cleanPoint = point.replace(/^\d+\.\s+|-\s+|\*\s+/, "").replace(/\*\*/g, "").trim();
-                    // Skip empty or purely separator lines
-                    if (!cleanPoint || cleanPoint.match(/^[-=_*]+$/)) return null;
-
-                    // Check if it's a section header (like "ATS OPTIMIZATION RECOMMENDATIONS")
-                    if (cleanPoint.toUpperCase() === cleanPoint && cleanPoint.length < 50 && !cleanPoint.includes(":")) {
-                        return (
-                            <h4 key={index} className="text-xs font-bold text-gray-500 uppercase tracking-wider mt-6 mb-2">
-                                {cleanPoint}
-                            </h4>
-                        );
-                    }
+                    if (!cleanPoint) return null;
 
                     return (
                         <div key={index} className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 hover:shadow-sm transition-shadow">
@@ -231,18 +165,7 @@ export default function Home() {
                                     </svg>
                                 </div>
                                 <div className="flex-1">
-                                    {cleanPoint.includes(":") ? (
-                                        <>
-                                            <span className="block font-semibold text-gray-900 text-sm mb-1">
-                                                {cleanPoint.split(":")[0]}:
-                                            </span>
-                                            <p className="text-gray-700 text-sm leading-relaxed">
-                                                {cleanPoint.substring(cleanPoint.indexOf(":") + 1).trim()}
-                                            </p>
-                                        </>
-                                    ) : (
-                                        <p className="text-gray-700 text-sm leading-relaxed">{cleanPoint}</p>
-                                    )}
+                                    <p className="text-gray-700 text-sm leading-relaxed">{cleanPoint}</p>
                                 </div>
                             </div>
                         </div>
@@ -318,7 +241,8 @@ export default function Home() {
                                     onChange={handleFileChange}
                                     className="hidden"
                                     id="resume-upload"
-                                />
+                                >
+                                </input>
                                 <label htmlFor="resume-upload" className="cursor-pointer block">
                                     {selectedFile ? (
                                         <div className="flex items-center justify-center gap-3">
@@ -393,36 +317,34 @@ export default function Home() {
                     {analysis && (
                         <div className="lg:col-span-8 space-y-6 animate-in">
                             {/* Score Card */}
-                            {matchScore !== null && (
-                                <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8">
-                                    <div className="text-center md:text-left">
-                                        <p className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">ATS Compatibility</p>
-                                        <h3 className={`text-2xl font-bold ${getScoreColor(matchScore)}`}>
-                                            {getScoreLabel(matchScore)}
-                                        </h3>
-                                    </div>
-                                    <div className="relative w-32 h-32 flex items-center justify-center">
-                                        <svg className="w-full h-full transform -rotate-90">
-                                            <circle cx="64" cy="64" r="60" stroke="currentColor" strokeWidth="8" fill="none" className="text-gray-100" />
-                                            <circle
-                                                cx="64"
-                                                cy="64"
-                                                r="60"
-                                                stroke="currentColor"
-                                                strokeWidth="8"
-                                                fill="none"
-                                                strokeDasharray={377}
-                                                strokeDashoffset={377 - (377 * matchScore) / 100}
-                                                className={`${getScoreColor(matchScore)} transition-all duration-1000 ease-out`}
-                                                strokeLinecap="round"
-                                            />
-                                        </svg>
-                                        <span className={`absolute text-3xl font-bold ${getScoreColor(matchScore)}`}>
-                                            {matchScore}
-                                        </span>
-                                    </div>
+                            <div className="bg-white border border-gray-100 rounded-2xl p-8 shadow-sm flex flex-col md:flex-row items-center justify-between gap-8">
+                                <div className="text-center md:text-left">
+                                    <p className="text-sm font-medium text-gray-500 uppercase tracking-wider mb-1">ATS Compatibility</p>
+                                    <h3 className={`text-2xl font-bold ${getScoreColor(analysis?.ats_score)}`}>
+                                        {getScoreLabel(analysis?.ats_score)}
+                                    </h3>
                                 </div>
-                            )}
+                                <div className="relative w-32 h-32 flex items-center justify-center">
+                                    <svg className="w-full h-full transform -rotate-90">
+                                        <circle cx="64" cy="64" r="60" stroke="currentColor" strokeWidth="8" fill="none" className="text-gray-100" />
+                                        <circle
+                                            cx="64"
+                                            cy="64"
+                                            r="60"
+                                            stroke="currentColor"
+                                            strokeWidth="8"
+                                            fill="none"
+                                            strokeDasharray={377}
+                                            strokeDashoffset={analysis?.ats_score ? 377 - (377 * analysis.ats_score) / 100 : 377}
+                                            className={`${getScoreColor(analysis?.ats_score)} transition-all duration-1000 ease-out`}
+                                            strokeLinecap="round"
+                                        />
+                                    </svg>
+                                    <span className={`absolute text-3xl font-bold ${getScoreColor(analysis?.ats_score)}`}>
+                                        {analysis?.ats_score ?? 0}
+                                    </span>
+                                </div>
+                            </div>
 
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Analysis Column */}
@@ -433,10 +355,10 @@ export default function Home() {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900">Analysis</h3>
+                                        <h3 className="font-semibold text-gray-900">Fit Analysis</h3>
                                     </div>
                                     <div className="space-y-4">
-                                        {renderAnalysisContent(getAnalysisSection(analysis))}
+                                        {renderAnalysisContent(analysis.fit_analysis)}
                                     </div>
                                 </div>
 
@@ -448,10 +370,10 @@ export default function Home() {
                                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13 10V3L4 14h7v7l9-11h-7z" />
                                             </svg>
                                         </div>
-                                        <h3 className="font-semibold text-gray-900">Improvements</h3>
+                                        <h3 className="font-semibold text-gray-900">ATS Improvements</h3>
                                     </div>
                                     <div className="space-y-4">
-                                        {renderImprovementContent(getImprovementSection(analysis))}
+                                        {renderImprovementContent(analysis.improvement_tips)}
                                     </div>
                                 </div>
                             </div>

@@ -92,8 +92,15 @@ def analyze_resume():
         analysis_result = ai_analyzer.analyze_resume(resume_text, job_description)
         
         # Check if analysis failed
-        if analysis_result.startswith("Error:"):
+        if isinstance(analysis_result, dict) and "error" in analysis_result:
             return jsonify({
+                "error": "Analysis failed",
+                "message": analysis_result["error"],
+                "details": "Please try again or contact support if the problem persists"
+            }), 500
+        
+        if isinstance(analysis_result, str) and analysis_result.startswith("Error:"):
+             return jsonify({
                 "error": "Analysis failed",
                 "message": analysis_result,
                 "details": "Please try again or contact support if the problem persists"
