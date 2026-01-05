@@ -37,9 +37,7 @@ export default function LatexEditorPage() {
     const selectTemplate = async (templateId: string) => {
         setIsLoading(true);
         try {
-            const response = await axios.get(
-                getApiUrl(`/api/v1/templates/${templateId}/preview`)
-            );
+            const response = await axios.get(getApiUrl(`/api/v1/templates/${templateId}/preview`));
             if (response.data?.latex_code) {
                 setInitialCode(response.data.latex_code);
                 setSelectedTemplate(templateId);
@@ -71,104 +69,187 @@ export default function LatexEditorPage() {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
-            {/* Header */}
-            <header className="bg-black/30 backdrop-blur-sm border-b border-white/10">
-                <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-                    <div className="flex items-center gap-4">
-                        <Link
-                            href="/"
-                            className="text-white/70 hover:text-white transition-colors"
-                        >
-                            ← Back
-                        </Link>
-                        <h1 className="text-xl font-bold text-white">
-                            📝 LaTeX Resume Builder
-                        </h1>
-                    </div>
-                    <div className="flex items-center gap-3">
-                        <button
-                            onClick={() => setShowTemplateModal(true)}
-                            className="px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg transition-colors text-sm"
-                        >
-                            🎨 Change Template
-                        </button>
+        <div className="min-h-screen bg-gradient-to-br from-slate-900 via-indigo-950 to-slate-900">
+            {/* Crystal Clear Header */}
+            <header className="fixed top-0 left-0 right-0 z-50">
+                <div className="mx-4 mt-4">
+                    <div className="glass-dark shadow-glass-lg rounded-2xl max-w-7xl mx-auto">
+                        <div className="px-6 h-16 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                <Link
+                                    href="/"
+                                    className="flex items-center gap-2 px-3 py-1.5 rounded-lg text-white/70 hover:text-white hover:bg-white/10 transition-all"
+                                >
+                                    <svg
+                                        className="w-4 h-4"
+                                        fill="none"
+                                        stroke="currentColor"
+                                        viewBox="0 0 24 24"
+                                    >
+                                        <path
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            strokeWidth="2"
+                                            d="M15 19l-7-7 7-7"
+                                        />
+                                    </svg>
+                                    Back
+                                </Link>
+                                <div className="h-6 w-px bg-white/20"></div>
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                                        <span className="text-white font-bold text-sm">📝</span>
+                                    </div>
+                                    <div>
+                                        <h1 className="text-lg font-bold text-white">
+                                            LaTeX Resume Builder
+                                        </h1>
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button
+                                    onClick={() => setShowTemplateModal(true)}
+                                    className="px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all text-sm font-medium border border-white/10"
+                                >
+                                    🎨 Templates
+                                </button>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </header>
 
             {/* Main Content */}
-            <main className="p-4" style={{ height: "calc(100vh - 73px)" }}>
+            <main className="pt-24 px-4 pb-4" style={{ height: "100vh" }}>
                 {showTemplateModal ? (
                     // Template Selection Modal
-                    <div className="max-w-4xl mx-auto">
-                        <div className="bg-gray-800/80 backdrop-blur-sm rounded-2xl p-8 border border-white/10">
-                            <h2 className="text-2xl font-bold text-white mb-2">
-                                Choose a Template
-                            </h2>
-                            <p className="text-gray-400 mb-6">
-                                Select a template to start building your professional resume
-                            </p>
+                    <div className="max-w-4xl mx-auto pt-8 animate-in">
+                        <div className="glass-dark shadow-glass-lg rounded-3xl p-8 border border-white/10">
+                            <div className="text-center mb-8">
+                                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-500/20 text-indigo-300 text-sm font-medium mb-4">
+                                    <span className="w-2 h-2 rounded-full bg-indigo-400 animate-pulse"></span>
+                                    Professional Templates
+                                </div>
+                                <h2 className="text-3xl font-bold text-white mb-2">
+                                    Choose Your Template
+                                </h2>
+                                <p className="text-gray-400">
+                                    Select a professionally designed template to get started
+                                </p>
+                            </div>
 
-                            <div className="grid md:grid-cols-3 gap-4 mb-6">
+                            <div className="grid md:grid-cols-3 gap-4 mb-8">
                                 {templates.map((template) => (
                                     <button
                                         key={template.id}
                                         onClick={() => selectTemplate(template.id)}
                                         disabled={isLoading}
-                                        className={`p-6 rounded-xl border-2 transition-all text-left ${
+                                        className={`group p-6 rounded-2xl border-2 transition-all text-left relative overflow-hidden ${
                                             selectedTemplate === template.id
-                                                ? "border-purple-500 bg-purple-900/30"
-                                                : "border-gray-600 hover:border-gray-500 bg-gray-700/50"
+                                                ? "border-indigo-500 bg-indigo-500/20"
+                                                : "border-white/10 hover:border-indigo-500/50 bg-white/5 hover:bg-white/10"
                                         } ${isLoading ? "opacity-50 cursor-not-allowed" : ""}`}
                                     >
-                                        <h3 className="text-lg font-semibold text-white mb-2">
-                                            {template.name}
-                                        </h3>
-                                        <p className="text-sm text-gray-400">{template.description}</p>
+                                        <div className="relative z-10">
+                                            <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center mb-4 group-hover:scale-110 transition-transform">
+                                                <span className="text-white text-xl">
+                                                    {template.id === "modern"
+                                                        ? "✨"
+                                                        : template.id === "minimal"
+                                                        ? "◽"
+                                                        : "📚"}
+                                                </span>
+                                            </div>
+                                            <h3 className="text-lg font-semibold text-white mb-2">
+                                                {template.name}
+                                            </h3>
+                                            <p className="text-sm text-gray-400">
+                                                {template.description}
+                                            </p>
+                                        </div>
+                                        {selectedTemplate === template.id && (
+                                            <div className="absolute top-3 right-3 w-6 h-6 rounded-full bg-indigo-500 flex items-center justify-center">
+                                                <svg
+                                                    className="w-4 h-4 text-white"
+                                                    fill="none"
+                                                    stroke="currentColor"
+                                                    viewBox="0 0 24 24"
+                                                >
+                                                    <path
+                                                        strokeLinecap="round"
+                                                        strokeLinejoin="round"
+                                                        strokeWidth="2"
+                                                        d="M5 13l4 4L19 7"
+                                                    />
+                                                </svg>
+                                            </div>
+                                        )}
                                     </button>
                                 ))}
                             </div>
 
-                            <div className="flex items-center gap-4">
-                                <div className="flex-1 border-t border-gray-700"></div>
-                                <span className="text-gray-500 text-sm">or</span>
-                                <div className="flex-1 border-t border-gray-700"></div>
+                            <div className="flex items-center gap-4 mb-6">
+                                <div className="flex-1 border-t border-white/10"></div>
+                                <span className="text-gray-500 text-sm">or start fresh</span>
+                                <div className="flex-1 border-t border-white/10"></div>
                             </div>
 
                             <button
                                 onClick={startBlank}
                                 disabled={isLoading}
-                                className="mt-6 w-full py-4 bg-gray-700 hover:bg-gray-600 text-white rounded-xl transition-colors flex items-center justify-center gap-2"
+                                className="w-full py-4 bg-white/10 hover:bg-white/15 text-white rounded-xl transition-all flex items-center justify-center gap-2 border border-white/10 font-medium"
                             >
                                 {isLoading ? (
-                                    <span className="animate-spin">⏳</span>
+                                    <span className="flex items-center gap-2">
+                                        <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                            <circle
+                                                className="opacity-25"
+                                                cx="12"
+                                                cy="12"
+                                                r="10"
+                                                stroke="currentColor"
+                                                strokeWidth="4"
+                                                fill="none"
+                                            />
+                                            <path
+                                                className="opacity-75"
+                                                fill="currentColor"
+                                                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"
+                                            />
+                                        </svg>
+                                        Loading...
+                                    </span>
                                 ) : (
-                                    <>
-                                        📄 Start with Blank Template
-                                    </>
+                                    <>📄 Start with Blank Template</>
                                 )}
                             </button>
                         </div>
 
                         {/* Features Info */}
                         <div className="mt-8 grid md:grid-cols-3 gap-4">
-                            <div className="bg-gray-800/50 rounded-xl p-4 border border-white/5">
-                                <div className="text-2xl mb-2">🤖</div>
+                            <div className="glass-dark shadow-glass rounded-2xl p-5 border border-white/5">
+                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-green-600 flex items-center justify-center mb-3">
+                                    <span className="text-2xl">🤖</span>
+                                </div>
                                 <h3 className="font-semibold text-white mb-1">AI-Powered</h3>
                                 <p className="text-sm text-gray-400">
-                                    Get intelligent suggestions to improve your resume
+                                    Get intelligent suggestions to improve your resume content
                                 </p>
                             </div>
-                            <div className="bg-gray-800/50 rounded-xl p-4 border border-white/5">
-                                <div className="text-2xl mb-2">📊</div>
+                            <div className="glass-dark shadow-glass rounded-2xl p-5 border border-white/5">
+                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center mb-3">
+                                    <span className="text-2xl">📊</span>
+                                </div>
                                 <h3 className="font-semibold text-white mb-1">ATS Optimized</h3>
                                 <p className="text-sm text-gray-400">
                                     Ensure your resume passes applicant tracking systems
                                 </p>
                             </div>
-                            <div className="bg-gray-800/50 rounded-xl p-4 border border-white/5">
-                                <div className="text-2xl mb-2">📥</div>
+                            <div className="glass-dark shadow-glass rounded-2xl p-5 border border-white/5">
+                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-600 flex items-center justify-center mb-3">
+                                    <span className="text-2xl">📥</span>
+                                </div>
                                 <h3 className="font-semibold text-white mb-1">PDF Export</h3>
                                 <p className="text-sm text-gray-400">
                                     Download professional PDF ready for applications
@@ -178,7 +259,7 @@ export default function LatexEditorPage() {
                     </div>
                 ) : (
                     // LaTeX Editor
-                    <div className="h-full">
+                    <div className="h-full pt-2">
                         <LaTeXEditor initialCode={initialCode} />
                     </div>
                 )}
