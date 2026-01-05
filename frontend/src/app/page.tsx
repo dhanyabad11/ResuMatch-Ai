@@ -4,6 +4,7 @@ import { useState } from "react";
 import axios from "axios";
 import { getApiUrl, API_CONFIG } from "@/lib/config";
 import Image from "next/image";
+import Link from "next/link";
 
 interface AnalysisResult {
     ats_score: number;
@@ -47,7 +48,7 @@ export default function Home() {
         formData.append("job_description", jobDescription);
 
         try {
-            const response = await axios.post(getApiUrl("/analyze-resume"), formData, {
+            const response = await axios.post(getApiUrl(API_CONFIG.endpoints.analyzeResume), formData, {
                 ...API_CONFIG,
                 timeout: 120000,
             });
@@ -200,6 +201,12 @@ export default function Home() {
                             Start Over
                         </button>
                     )}
+                    <Link
+                        href="/latex-editor"
+                        className="px-4 py-2 bg-gradient-to-r from-purple-600 to-blue-600 text-white text-sm font-medium rounded-lg hover:from-purple-700 hover:to-blue-700 transition-all shadow-sm"
+                    >
+                        📝 LaTeX Builder
+                    </Link>
                 </div>
             </header>
 
