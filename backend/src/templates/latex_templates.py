@@ -1,5 +1,6 @@
 """
 LaTeX Templates for Resume Generation
+Python 3.9 compatible version - uses string concatenation instead of f-strings with backslashes
 """
 from abc import ABC, abstractmethod
 from typing import Dict, List
@@ -56,81 +57,79 @@ class ModernTemplate(BaseTemplate):
         return "A clean, modern resume template with a professional look"
     
     def generate(self, data: ResumeData) -> str:
-        return f'''\\documentclass[11pt,a4paper]{{article}}
+        header = r'''\documentclass[11pt,a4paper]{article}
 
 % Packages
-\\usepackage[utf8]{{inputenc}}
-\\usepackage[T1]{{fontenc}}
-\\usepackage{{lmodern}}
-\\usepackage[margin=0.75in]{{geometry}}
-\\usepackage{{enumitem}}
-\\usepackage{{hyperref}}
-\\usepackage{{xcolor}}
-\\usepackage{{titlesec}}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[margin=0.75in]{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{xcolor}
+\usepackage{titlesec}
 
 % Colors
-\\definecolor{{primary}}{{RGB}}{{0, 79, 144}}
-\\definecolor{{secondary}}{{RGB}}{{100, 100, 100}}
+\definecolor{primary}{RGB}{0, 79, 144}
+\definecolor{secondary}{RGB}{100, 100, 100}
 
 % Section formatting
-\\titleformat{{\\section}}{{\\large\\bfseries\\color{{primary}}}}{{}}{{0em}}{{}}[\\titlerule]
-\\titlespacing{{\\section}}{{0pt}}{{10pt}}{{5pt}}
+\titleformat{\section}{\large\bfseries\color{primary}}{}{0em}{}[\titlerule]
+\titlespacing{\section}{0pt}{10pt}{5pt}
 
 % Hyperlink setup
-\\hypersetup{{
+\hypersetup{
     colorlinks=true,
     linkcolor=primary,
     urlcolor=primary
-}}
+}
 
 % Remove paragraph indentation
-\\setlength{{\\parindent}}{{0pt}}
+\setlength{\parindent}{0pt}
 
-\\begin{{document}}
+\begin{document}
 
 % Header
-\\begin{{center}}
-    {{\\LARGE\\bfseries {self.escape_latex(data.name)}}}\\\\[5pt]
-    {self._generate_contact_line(data)}
-\\end{{center}}
-
-{self._generate_summary(data)}
-
-{self._generate_experience(data)}
-
-{self._generate_education(data)}
-
-{self._generate_skills(data)}
-
-{self._generate_projects(data)}
-
-{self._generate_certifications(data)}
-
-\\end{{document}}
+\begin{center}
 '''
+        name_line = "    {\\LARGE\\bfseries " + self.escape_latex(data.name) + "}\\\\[5pt]\n"
+        contact_line = "    " + self._generate_contact_line(data) + "\n"
+        
+        middle = r'''\end{center}
+
+'''
+        summary = self._generate_summary(data)
+        experience = self._generate_experience(data)
+        education = self._generate_education(data)
+        skills = self._generate_skills(data)
+        projects = self._generate_projects(data)
+        certifications = self._generate_certifications(data)
+        
+        footer = r'''
+\end{document}
+'''
+        return header + name_line + contact_line + middle + summary + experience + education + skills + projects + certifications + footer
     
     def _generate_contact_line(self, data: ResumeData) -> str:
         items = []
         if data.email:
-            items.append(f'\\href{{mailto:{data.email}}}{{{self.escape_latex(data.email)}}}')
+            items.append("\\href{mailto:" + data.email + "}{" + self.escape_latex(data.email) + "}")
         if data.phone:
             items.append(self.escape_latex(data.phone))
         if data.location:
             items.append(self.escape_latex(data.location))
         if data.linkedin:
-            items.append(f'\\href{{{data.linkedin}}}{{LinkedIn}}')
+            items.append("\\href{" + data.linkedin + "}{LinkedIn}")
         if data.github:
-            items.append(f'\\href{{{data.github}}}{{GitHub}}')
+            items.append("\\href{" + data.github + "}{GitHub}")
         if data.website:
-            items.append(f'\\href{{{data.website}}}{{Portfolio}}')
+            items.append("\\href{" + data.website + "}{Portfolio}")
         return ' $|$ '.join(items)
     
     def _generate_summary(self, data: ResumeData) -> str:
         if not data.summary:
             return ""
-        return f'''\\section*{{Professional Summary}}
-{self.escape_latex(data.summary)}
-'''
+        return "\\section*{Professional Summary}\n" + self.escape_latex(data.summary) + "\n\n"
     
     def _generate_experience(self, data: ResumeData) -> str:
         if not data.experience:
@@ -144,17 +143,16 @@ class ModernTemplate(BaseTemplate):
             dates = self.escape_latex(exp.get('dates', ''))
             responsibilities = exp.get('responsibilities', [])
             
-            resp_items = '\n'.join([f'    \\item {self.escape_latex(r)}' for r in responsibilities])
+            resp_items = '\n'.join(["    \\item " + self.escape_latex(r) for r in responsibilities])
             
-            items.append(f'''\\textbf{{{title}}} \\hfill {dates}\\\\
-\\textit{{{company}}} \\hfill {location}
-\\begin{{itemize}}[leftmargin=*,noitemsep]
-{resp_items}
-\\end{{itemize}}
-''')
+            item = "\\textbf{" + title + "} \\hfill " + dates + "\\\\\n"
+            item += "\\textit{" + company + "} \\hfill " + location + "\n"
+            item += "\\begin{itemize}[leftmargin=*,noitemsep]\n"
+            item += resp_items + "\n"
+            item += "\\end{itemize}\n"
+            items.append(item)
         
-        return f'''\\section*{{Experience}}
-{''.join(items)}'''
+        return "\\section*{Experience}\n" + ''.join(items) + "\n"
     
     def _generate_education(self, data: ResumeData) -> str:
         if not data.education:
@@ -167,20 +165,19 @@ class ModernTemplate(BaseTemplate):
             dates = self.escape_latex(edu.get('dates', ''))
             gpa = edu.get('gpa', '')
             
-            gpa_text = f' (GPA: {gpa})' if gpa else ''
-            items.append(f'\\textbf{{{degree}}}{gpa_text} \\hfill {dates}\\\\\n\\textit{{{institution}}}\\\\[5pt]\n')
+            gpa_text = ' (GPA: ' + gpa + ')' if gpa else ''
+            item = "\\textbf{" + degree + "}" + gpa_text + " \\hfill " + dates + "\\\\\n"
+            item += "\\textit{" + institution + "}\\\\[5pt]\n"
+            items.append(item)
         
-        return f'''\\section*{{Education}}
-{''.join(items)}'''
+        return "\\section*{Education}\n" + ''.join(items) + "\n"
     
     def _generate_skills(self, data: ResumeData) -> str:
         if not data.skills:
             return ""
         
         skills_text = ', '.join([self.escape_latex(s) for s in data.skills])
-        return f'''\\section*{{Skills}}
-{skills_text}
-'''
+        return "\\section*{Skills}\n" + skills_text + "\n\n"
     
     def _generate_projects(self, data: ResumeData) -> str:
         if not data.projects:
@@ -191,23 +188,19 @@ class ModernTemplate(BaseTemplate):
             name = self.escape_latex(proj.get('name', ''))
             description = self.escape_latex(proj.get('description', ''))
             tech = proj.get('technologies', [])
-            tech_text = f" \\textit{{({', '.join([self.escape_latex(t) for t in tech])})}}" if tech else ""
+            tech_text = " \\textit{(" + ', '.join([self.escape_latex(t) for t in tech]) + ")}" if tech else ""
             
-            items.append(f'\\textbf{{{name}}}{tech_text}: {description}\\\\[3pt]\n')
+            item = "\\textbf{" + name + "}" + tech_text + ": " + description + "\\\\[3pt]\n"
+            items.append(item)
         
-        return f'''\\section*{{Projects}}
-{''.join(items)}'''
+        return "\\section*{Projects}\n" + ''.join(items) + "\n"
     
     def _generate_certifications(self, data: ResumeData) -> str:
         if not data.certifications:
             return ""
         
-        items = '\n'.join([f'\\item {self.escape_latex(c)}' for c in data.certifications])
-        return f'''\\section*{{Certifications}}
-\\begin{{itemize}}[leftmargin=*,noitemsep]
-{items}
-\\end{{itemize}}
-'''
+        items = '\n'.join(["\\item " + self.escape_latex(c) for c in data.certifications])
+        return "\\section*{Certifications}\n\\begin{itemize}[leftmargin=*,noitemsep]\n" + items + "\n\\end{itemize}\n"
 
 
 class MinimalTemplate(BaseTemplate):
@@ -222,36 +215,38 @@ class MinimalTemplate(BaseTemplate):
         return "A minimalist resume template with clean typography"
     
     def generate(self, data: ResumeData) -> str:
-        return f'''\\documentclass[11pt,a4paper]{{article}}
+        header = r'''\documentclass[11pt,a4paper]{article}
 
-\\usepackage[utf8]{{inputenc}}
-\\usepackage[T1]{{fontenc}}
-\\usepackage[margin=1in]{{geometry}}
-\\usepackage{{enumitem}}
-\\usepackage{{hyperref}}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
 
-\\setlength{{\\parindent}}{{0pt}}
-\\pagestyle{{empty}}
+\setlength{\parindent}{0pt}
+\pagestyle{empty}
 
-\\begin{{document}}
+\begin{document}
 
-{{\\Large\\bfseries {self.escape_latex(data.name)}}}\\\\[5pt]
-{self.escape_latex(data.email)} $\\cdot$ {self.escape_latex(data.phone)}
-{f" $\\cdot$ {self.escape_latex(data.location)}" if data.location else ""}
-
-\\hrule
-\\vspace{{10pt}}
-
-{self._generate_body(data)}
-
-\\end{{document}}
 '''
+        name_line = "{\\Large\\bfseries " + self.escape_latex(data.name) + "}\\\\[5pt]\n"
+        contact_line = self.escape_latex(data.email) + " $\\cdot$ " + self.escape_latex(data.phone)
+        if data.location:
+            contact_line += " $\\cdot$ " + self.escape_latex(data.location)
+        contact_line += "\n\n\\hrule\n\\vspace{10pt}\n\n"
+        
+        body = self._generate_body(data)
+        
+        footer = r'''
+\end{document}
+'''
+        return header + name_line + contact_line + body + footer
     
     def _generate_body(self, data: ResumeData) -> str:
         sections = []
         
         if data.summary:
-            sections.append(f'\\textbf{{Summary}}\\\\[3pt]\n{self.escape_latex(data.summary)}\\\\[10pt]')
+            sections.append("\\textbf{Summary}\\\\[3pt]\n" + self.escape_latex(data.summary) + "\\\\[10pt]")
         
         if data.experience:
             exp_items = []
@@ -259,8 +254,8 @@ class MinimalTemplate(BaseTemplate):
                 title = self.escape_latex(exp.get('title', ''))
                 company = self.escape_latex(exp.get('company', ''))
                 dates = self.escape_latex(exp.get('dates', ''))
-                exp_items.append(f'{title} at {company} \\hfill {dates}')
-            sections.append(f"\\textbf{{Experience}}\\\\[3pt]\n" + '\\\\[3pt]\n'.join(exp_items) + '\\\\[10pt]')
+                exp_items.append(title + " at " + company + " \\hfill " + dates)
+            sections.append("\\textbf{Experience}\\\\[3pt]\n" + '\\\\[3pt]\n'.join(exp_items) + '\\\\[10pt]')
         
         if data.education:
             edu_items = []
@@ -268,12 +263,12 @@ class MinimalTemplate(BaseTemplate):
                 degree = self.escape_latex(edu.get('degree', ''))
                 institution = self.escape_latex(edu.get('institution', ''))
                 dates = self.escape_latex(edu.get('dates', ''))
-                edu_items.append(f'{degree}, {institution} \\hfill {dates}')
-            sections.append(f"\\textbf{{Education}}\\\\[3pt]\n" + '\\\\[3pt]\n'.join(edu_items) + '\\\\[10pt]')
+                edu_items.append(degree + ", " + institution + " \\hfill " + dates)
+            sections.append("\\textbf{Education}\\\\[3pt]\n" + '\\\\[3pt]\n'.join(edu_items) + '\\\\[10pt]')
         
         if data.skills:
             skills_text = ', '.join([self.escape_latex(s) for s in data.skills])
-            sections.append(f'\\textbf{{Skills}}\\\\[3pt]\n{skills_text}')
+            sections.append("\\textbf{Skills}\\\\[3pt]\n" + skills_text)
         
         return '\n\n'.join(sections)
 
@@ -290,33 +285,37 @@ class AcademicTemplate(BaseTemplate):
         return "A comprehensive academic CV template suitable for research positions"
     
     def generate(self, data: ResumeData) -> str:
-        return f'''\\documentclass[11pt,a4paper]{{article}}
+        header = r'''\documentclass[11pt,a4paper]{article}
 
-\\usepackage[utf8]{{inputenc}}
-\\usepackage[T1]{{fontenc}}
-\\usepackage[margin=1in]{{geometry}}
-\\usepackage{{enumitem}}
-\\usepackage{{hyperref}}
-\\usepackage{{titlesec}}
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[margin=1in]{geometry}
+\usepackage{enumitem}
+\usepackage{hyperref}
+\usepackage{titlesec}
 
-\\titleformat{{\\section}}{{\\large\\bfseries}}{{}}{{0em}}{{}}[\\hrule]
-\\titlespacing{{\\section}}{{0pt}}{{12pt}}{{6pt}}
+\titleformat{\section}{\large\bfseries}{}{0em}{}[\hrule]
+\titlespacing{\section}{0pt}{12pt}{6pt}
 
-\\setlength{{\\parindent}}{{0pt}}
-\\pagestyle{{empty}}
+\setlength{\parindent}{0pt}
+\pagestyle{empty}
 
-\\begin{{document}}
+\begin{document}
 
-\\begin{{center}}
-{{\\LARGE\\bfseries {self.escape_latex(data.name)}}}\\\\[10pt]
-{self.escape_latex(data.email)} $|$ {self.escape_latex(data.phone)}
-{f" $|$ {self.escape_latex(data.location)}" if data.location else ""}
-\\end{{center}}
-
-{self._generate_sections(data)}
-
-\\end{{document}}
+\begin{center}
 '''
+        name_line = "{\\LARGE\\bfseries " + self.escape_latex(data.name) + "}\\\\[10pt]\n"
+        contact = self.escape_latex(data.email) + " $|$ " + self.escape_latex(data.phone)
+        if data.location:
+            contact += " $|$ " + self.escape_latex(data.location)
+        contact_line = contact + "\n\\end{center}\n\n"
+        
+        sections = self._generate_sections(data)
+        
+        footer = r'''
+\end{document}
+'''
+        return header + name_line + contact_line + sections + footer
     
     def _generate_sections(self, data: ResumeData) -> str:
         sections = []
@@ -327,8 +326,8 @@ class AcademicTemplate(BaseTemplate):
                 degree = self.escape_latex(edu.get('degree', ''))
                 institution = self.escape_latex(edu.get('institution', ''))
                 dates = self.escape_latex(edu.get('dates', ''))
-                items.append(f'\\textbf{{{degree}}}\\\\{institution} \\hfill {dates}\\\\[5pt]')
-            sections.append(f'\\section*{{Education}}\n' + '\n'.join(items))
+                items.append("\\textbf{" + degree + "}\\\\" + institution + " \\hfill " + dates + "\\\\[5pt]")
+            sections.append("\\section*{Education}\n" + '\n'.join(items))
         
         if data.experience:
             items = []
@@ -336,20 +335,20 @@ class AcademicTemplate(BaseTemplate):
                 title = self.escape_latex(exp.get('title', ''))
                 company = self.escape_latex(exp.get('company', ''))
                 dates = self.escape_latex(exp.get('dates', ''))
-                items.append(f'\\textbf{{{title}}}, {company} \\hfill {dates}\\\\[5pt]')
-            sections.append(f'\\section*{{Research Experience}}\n' + '\n'.join(items))
+                items.append("\\textbf{" + title + "}, " + company + " \\hfill " + dates + "\\\\[5pt]")
+            sections.append("\\section*{Research Experience}\n" + '\n'.join(items))
         
         if data.skills:
             skills_text = ', '.join([self.escape_latex(s) for s in data.skills])
-            sections.append(f'\\section*{{Technical Skills}}\n{skills_text}')
+            sections.append("\\section*{Technical Skills}\n" + skills_text)
         
         if data.projects:
             items = []
             for proj in data.projects:
                 name = self.escape_latex(proj.get('name', ''))
                 desc = self.escape_latex(proj.get('description', ''))
-                items.append(f'\\textbf{{{name}}}: {desc}\\\\[3pt]')
-            sections.append(f'\\section*{{Publications \\& Projects}}\n' + '\n'.join(items))
+                items.append("\\textbf{" + name + "}: " + desc + "\\\\[3pt]")
+            sections.append("\\section*{Publications \\& Projects}\n" + '\n'.join(items))
         
         return '\n\n'.join(sections)
 
@@ -366,7 +365,7 @@ def get_template(template_name: str) -> BaseTemplate:
     """Get a template by name"""
     template = TEMPLATES.get(template_name)
     if not template:
-        raise ValueError(f"Template '{template_name}' not found. Available: {list(TEMPLATES.keys())}")
+        raise ValueError("Template '" + template_name + "' not found. Available: " + str(list(TEMPLATES.keys())))
     return template
 
 

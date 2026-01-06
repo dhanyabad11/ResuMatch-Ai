@@ -6,7 +6,7 @@ import subprocess
 import tempfile
 import os
 import shutil
-from typing import Optional, Tuple, Dict, List
+from typing import Optional, Tuple, Dict, List, Union
 from dataclasses import dataclass
 from src.core.exceptions import LaTeXCompilationError
 import logging
@@ -105,7 +105,7 @@ class LaTeXService:
         
         return len(errors) == 0, errors
     
-    def compile_to_pdf(self, latex_code: str) -> Tuple[bool, bytes | str]:
+    def compile_to_pdf(self, latex_code: str) -> Tuple[bool, Union[bytes, str]]:
         """
         Compile LaTeX code to PDF
         
