@@ -124,7 +124,7 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
             const response = await axios.post(
                 getApiUrl(API_CONFIG.endpoints.latexCompile),
                 { latex_code: code },
-                { responseType: "blob" }
+                { responseType: "blob" },
             );
 
             // Create download link
@@ -564,8 +564,8 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
                                 (atsResult.ats_score ?? 0) >= 80
                                     ? "bg-emerald-500"
                                     : (atsResult.ats_score ?? 0) >= 60
-                                    ? "bg-amber-500"
-                                    : "bg-red-500"
+                                      ? "bg-amber-500"
+                                      : "bg-red-500"
                             }`}
                         >
                             {atsResult.ats_score}
@@ -595,7 +595,7 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
                                     label="📋 Item List"
                                     onClick={() =>
                                         insertAtCursor(
-                                            "\\begin{itemize}[leftmargin=*,noitemsep]\n    \\item Item 1\n    \\item Item 2\n\\end{itemize}\n"
+                                            "\\begin{itemize}[leftmargin=*,noitemsep]\n    \\item Item 1\n    \\item Item 2\n\\end{itemize}\n",
                                         )
                                     }
                                 />
@@ -603,7 +603,7 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
                                     label="💼 Experience"
                                     onClick={() =>
                                         insertAtCursor(
-                                            "\\textbf{Job Title} \\hfill Month Year -- Present\\\\\n\\textit{Company Name} \\hfill City, State\n\\begin{itemize}[leftmargin=*,noitemsep]\n    \\item Accomplished X by Y, resulting in Z\n\\end{itemize}\n\n"
+                                            "\\textbf{Job Title} \\hfill Month Year -- Present\\\\\n\\textit{Company Name} \\hfill City, State\n\\begin{itemize}[leftmargin=*,noitemsep]\n    \\item Accomplished X by Y, resulting in Z\n\\end{itemize}\n\n",
                                         )
                                     }
                                 />
@@ -611,7 +611,7 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
                                     label="🎓 Education"
                                     onClick={() =>
                                         insertAtCursor(
-                                            "\\textbf{Degree Name} \\hfill Year\\\\\n\\textit{University Name} \\hfill City, State\n\n"
+                                            "\\textbf{Degree Name} \\hfill Year\\\\\n\\textit{University Name} \\hfill City, State\n\n",
                                         )
                                     }
                                 />
@@ -619,7 +619,7 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
                                     label="🚀 Project"
                                     onClick={() =>
                                         insertAtCursor(
-                                            "\\textbf{Project Name} \\textit{(Tech Stack)}\\\\\nDescription of the project and its impact.\n\n"
+                                            "\\textbf{Project Name} \\textit{(Tech Stack)}\\\\\nDescription of the project and its impact.\n\n",
                                         )
                                     }
                                 />
@@ -692,8 +692,8 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
                                                     aiResult.overall_score >= 80
                                                         ? "text-emerald-400"
                                                         : aiResult.overall_score >= 60
-                                                        ? "text-amber-400"
-                                                        : "text-red-400"
+                                                          ? "text-amber-400"
+                                                          : "text-red-400"
                                                 }`}
                                             >
                                                 {aiResult.overall_score}
@@ -722,8 +722,8 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
                                                         suggestion.priority === "high"
                                                             ? "border-red-500 bg-red-500/10"
                                                             : suggestion.priority === "medium"
-                                                            ? "border-amber-500 bg-amber-500/10"
-                                                            : "border-blue-500 bg-blue-500/10"
+                                                              ? "border-amber-500 bg-amber-500/10"
+                                                              : "border-blue-500 bg-blue-500/10"
                                                     }`}
                                                 >
                                                     <div className="flex items-center gap-2 mb-2">
@@ -735,9 +735,9 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
                                                                 suggestion.priority === "high"
                                                                     ? "bg-red-500 text-white"
                                                                     : suggestion.priority ===
-                                                                      "medium"
-                                                                    ? "bg-amber-500 text-white"
-                                                                    : "bg-blue-500 text-white"
+                                                                        "medium"
+                                                                      ? "bg-amber-500 text-white"
+                                                                      : "bg-blue-500 text-white"
                                                             }`}
                                                         >
                                                             {suggestion.priority}
@@ -783,7 +783,7 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
                                                                     onClick={() =>
                                                                         applyImprovedSection(
                                                                             section,
-                                                                            code
+                                                                            code,
                                                                         )
                                                                     }
                                                                     className="text-xs px-3 py-1.5 bg-gradient-to-r from-emerald-600 to-green-600 hover:from-emerald-500 hover:to-green-500 rounded-lg font-medium transition-all"
@@ -795,7 +795,7 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
                                                                 {code}
                                                             </pre>
                                                         </div>
-                                                    )
+                                                    ),
                                                 )}
                                             </div>
                                         </div>
@@ -837,8 +837,8 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
                                                 (atsResult.ats_score || 0) >= 80
                                                     ? "text-emerald-400"
                                                     : (atsResult.ats_score || 0) >= 60
-                                                    ? "text-amber-400"
-                                                    : "text-red-400"
+                                                      ? "text-amber-400"
+                                                      : "text-red-400"
                                             }`}
                                         >
                                             {atsResult.ats_score || 0}
@@ -936,7 +936,7 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
                                                             >
                                                                 {kw}
                                                             </span>
-                                                        )
+                                                        ),
                                                     )}
                                                 </div>
                                             </div>
@@ -955,7 +955,7 @@ export default function LaTeXEditor({ initialCode, onCodeChange }: LaTeXEditorPr
                                                             >
                                                                 + {kw}
                                                             </span>
-                                                        )
+                                                        ),
                                                     )}
                                                 </div>
                                             </div>

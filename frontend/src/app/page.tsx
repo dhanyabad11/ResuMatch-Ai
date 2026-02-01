@@ -51,9 +51,11 @@ export default function Home() {
                 getApiUrl(API_CONFIG.endpoints.analyzeResume),
                 formData,
                 {
-                    ...API_CONFIG,
+                    headers: {
+                        'Content-Type': 'multipart/form-data',
+                    },
                     timeout: 120000,
-                }
+                },
             );
 
             if (response.data && response.data.analysis) {
@@ -64,12 +66,16 @@ export default function Home() {
         } catch (error) {
             console.error("Analysis error:", error);
             if (axios.isAxiosError(error)) {
+                console.error("Response data:", error.response?.data);
+                console.error("Response status:", error.response?.status);
                 if (error.code === "ECONNABORTED") {
                     setError("Analysis timed out. Please try again.");
                 } else if (error.response?.status === 413) {
                     setError("File size too large (max 16MB).");
                 } else if (error.response?.data?.error) {
                     setError(error.response.data.error);
+                } else if (error.response?.data?.message) {
+                    setError(error.response.data.message);
                 } else {
                     setError("Analysis failed. Please try again.");
                 }
@@ -82,11 +88,11 @@ export default function Home() {
     };
 
     const getScoreColor = (score: number | undefined): string => {
-        if (!score || isNaN(score)) return "text-gray-400";
-        if (score >= 80) return "text-emerald-600";
-        if (score >= 60) return "text-amber-600";
-        if (score >= 40) return "text-orange-600";
-        return "text-rose-600";
+        if (!score || isNaN(score)) return "text-gray-500";
+        if (score >= 80) return "text-gray-200";
+        if (score >= 60) return "text-gray-300";
+        if (score >= 40) return "text-gray-400";
+        return "text-gray-500";
     };
 
     const getScoreLabel = (score: number | undefined): string => {
@@ -114,7 +120,7 @@ export default function Home() {
                 return (
                     <h3
                         key={index}
-                        className="text-sm font-semibold text-gray-900 uppercase tracking-wider mt-6 mb-3 first:mt-0"
+                        className="text-sm font-semibold text-gray-300 uppercase tracking-wider mt-6 mb-3 first:mt-0"
                     >
                         {headerText}
                     </h3>
@@ -126,8 +132,8 @@ export default function Home() {
                 const cleanText = trimmedLine.replace(/^[\*\-]\s+/, "").replace(/\*\*/g, "");
                 return (
                     <div key={index} className="flex items-start mb-3 group">
-                        <span className="w-1.5 h-1.5 rounded-full bg-blue-500 mt-2 mr-3 flex-shrink-0 group-hover:scale-125 transition-transform" />
-                        <p className="text-gray-600 leading-relaxed text-sm">{cleanText}</p>
+                        <span className="w-1.5 h-1.5 rounded-full bg-gray-500 mt-2 mr-3 flex-shrink-0 group-hover:scale-125 transition-transform" />
+                        <p className="text-gray-400 leading-relaxed text-sm">{cleanText}</p>
                     </div>
                 );
             }
@@ -137,10 +143,10 @@ export default function Home() {
                 const cleanText = trimmedLine.replace(/\*\*/g, "");
                 return (
                     <div key={index} className="flex items-start mb-3 group">
-                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-blue-50 text-blue-600 text-xs font-medium mr-3 mt-0.5 flex-shrink-0 group-hover:bg-blue-100 transition-colors">
+                        <span className="flex items-center justify-center w-5 h-5 rounded-full bg-gray-800 text-gray-300 text-xs font-medium mr-3 mt-0.5 flex-shrink-0 group-hover:bg-gray-700 transition-colors">
                             {trimmedLine.match(/^(\d+)\./)?.[1]}
                         </span>
-                        <p className="text-gray-600 leading-relaxed text-sm">
+                        <p className="text-gray-400 leading-relaxed text-sm">
                             {cleanText.replace(/^\d+\.\s+/, "")}
                         </p>
                     </div>
@@ -148,7 +154,7 @@ export default function Home() {
             }
 
             return (
-                <p key={index} className="text-gray-600 leading-relaxed mb-3 text-sm">
+                <p key={index} className="text-gray-400 leading-relaxed mb-3 text-sm">
                     {trimmedLine.replace(/\*\*/g, "")}
                 </p>
             );
@@ -172,10 +178,10 @@ export default function Home() {
                     return (
                         <div
                             key={index}
-                            className="bg-emerald-50/50 border border-emerald-100 rounded-xl p-4 hover:shadow-sm transition-shadow"
+                            className="bg-gray-800/50 border border-gray-700 rounded-xl p-4 hover:shadow-sm transition-shadow"
                         >
                             <div className="flex items-start gap-3">
-                                <div className="w-6 h-6 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center flex-shrink-0 mt-0.5">
+                                <div className="w-6 h-6 rounded-full bg-gray-700 text-gray-300 flex items-center justify-center flex-shrink-0 mt-0.5">
                                     <svg
                                         className="w-3.5 h-3.5"
                                         fill="none"
@@ -191,7 +197,7 @@ export default function Home() {
                                     </svg>
                                 </div>
                                 <div className="flex-1">
-                                    <p className="text-gray-700 text-sm leading-relaxed">
+                                    <p className="text-gray-300 text-sm leading-relaxed">
                                         {cleanPoint}
                                     </p>
                                 </div>
@@ -211,14 +217,14 @@ export default function Home() {
                     <div className="glass shadow-glass-lg rounded-2xl max-w-6xl mx-auto">
                         <div className="px-6 h-16 flex justify-between items-center">
                             <div className="flex items-center gap-3">
-                                <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center shadow-lg">
+                                <div className="relative w-10 h-10 rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center shadow-lg">
                                     <span className="text-white font-bold text-lg">R</span>
                                 </div>
                                 <div>
-                                    <h1 className="text-lg font-bold tracking-tight text-gray-900">
+                                    <h1 className="text-lg font-bold tracking-tight text-white">
                                         ResuMatch AI
                                     </h1>
-                                    <p className="text-xs text-gray-500 -mt-0.5">
+                                    <p className="text-xs text-gray-400 -mt-0.5">
                                         AI Resume Optimizer
                                     </p>
                                 </div>
@@ -227,16 +233,16 @@ export default function Home() {
                                 {(analysis || error || selectedFile) && (
                                     <button
                                         onClick={handleReset}
-                                        className="px-4 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all"
+                                        className="px-4 py-2 text-sm font-medium text-gray-400 hover:text-white hover:bg-gray-800 rounded-xl transition-all"
                                     >
-                                        ↻ Reset
+                                        Reset
                                     </button>
                                 )}
                                 <Link
                                     href="/latex-editor"
-                                    className="px-5 py-2.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white text-sm font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-105 active:scale-100"
+                                    className="px-5 py-2.5 bg-gradient-to-r from-gray-700 to-gray-900 text-white text-sm font-semibold rounded-xl hover:from-gray-800 hover:to-black transition-all shadow-lg hover:scale-105 active:scale-100"
                                 >
-                                    ✨ LaTeX Builder
+                                    LaTeX Builder
                                 </Link>
                             </div>
                         </div>
@@ -248,17 +254,17 @@ export default function Home() {
                 {/* Hero Section */}
                 {!analysis && !loading && (
                     <div className="text-center mb-16 animate-in">
-                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-indigo-50 text-indigo-700 text-sm font-medium mb-6">
-                            <span className="w-2 h-2 rounded-full bg-indigo-500 animate-pulse"></span>
+                        <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-gray-800 text-gray-300 text-sm font-medium mb-6">
+                            <span className="w-2 h-2 rounded-full bg-gray-500 animate-pulse"></span>
                             AI-Powered Resume Analysis
                         </div>
-                        <h2 className="text-5xl md:text-6xl font-bold text-gray-900 tracking-tight mb-6 leading-tight">
+                        <h2 className="text-5xl md:text-6xl font-bold text-white tracking-tight mb-6 leading-tight">
                             Get Your Resume
-                            <span className="block bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                            <span className="block text-gray-300">
                                 ATS-Ready
                             </span>
                         </h2>
-                        <p className="text-xl text-gray-500 max-w-2xl mx-auto leading-relaxed">
+                        <p className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
                             Upload your resume and get instant AI feedback to boost your chances of
                             landing interviews.
                         </p>
@@ -275,14 +281,14 @@ export default function Home() {
                         <div className="glass shadow-glass-lg rounded-2xl p-6 space-y-5">
                             {/* Resume Upload */}
                             <div className="group relative">
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    📄 Resume
+                                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                                    Resume
                                 </label>
                                 <div
                                     className={`relative border-2 border-dashed rounded-xl p-6 text-center transition-all duration-300 cursor-pointer ${
                                         selectedFile
-                                            ? "border-indigo-300 bg-indigo-50/50"
-                                            : "border-gray-200 hover:border-indigo-400 hover:bg-indigo-50/30"
+                                            ? "border-gray-600 bg-gray-800/50"
+                                            : "border-gray-700 hover:border-gray-600 hover:bg-gray-800/30"
                                     }`}
                                     onDragOver={(e) => e.preventDefault()}
                                     onDrop={(e) => {
@@ -304,7 +310,7 @@ export default function Home() {
                                     <label htmlFor="resume-upload" className="cursor-pointer block">
                                         {selectedFile ? (
                                             <div className="flex items-center justify-center gap-3">
-                                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white shadow-lg">
+                                                <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white shadow-lg">
                                                     <svg
                                                         className="w-6 h-6"
                                                         fill="none"
@@ -320,12 +326,12 @@ export default function Home() {
                                                     </svg>
                                                 </div>
                                                 <div className="text-left">
-                                                    <p className="text-sm font-semibold text-gray-900 truncate max-w-[180px]">
+                                                    <p className="text-sm font-semibold text-gray-200 truncate max-w-[180px]">
                                                         {selectedFile.name}
                                                     </p>
                                                     <p className="text-xs text-gray-500">
                                                         {(selectedFile.size / 1024 / 1024).toFixed(
-                                                            2
+                                                            2,
                                                         )}{" "}
                                                         MB • Click to change
                                                     </p>
@@ -333,7 +339,7 @@ export default function Home() {
                                             </div>
                                         ) : (
                                             <div className="space-y-3">
-                                                <div className="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 flex items-center justify-center text-gray-400 group-hover:from-indigo-100 group-hover:to-purple-100 group-hover:text-indigo-500 transition-all group-hover:scale-110">
+                                                <div className="w-14 h-14 mx-auto rounded-xl bg-gradient-to-br from-gray-800 to-gray-900 flex items-center justify-center text-gray-400 group-hover:from-gray-700 group-hover:to-gray-800 group-hover:text-gray-300 transition-all group-hover:scale-110">
                                                     <svg
                                                         className="w-7 h-7"
                                                         fill="none"
@@ -349,10 +355,10 @@ export default function Home() {
                                                     </svg>
                                                 </div>
                                                 <div>
-                                                    <p className="text-sm font-semibold text-gray-700">
+                                                    <p className="text-sm font-semibold text-gray-300">
                                                         Drop your resume here
                                                     </p>
-                                                    <p className="text-xs text-gray-400 mt-1">
+                                                    <p className="text-xs text-gray-500 mt-1">
                                                         or click to browse • PDF up to 16MB
                                                     </p>
                                                 </div>
@@ -364,15 +370,15 @@ export default function Home() {
 
                             {/* Job Description */}
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                    🎯 Target Job{" "}
-                                    <span className="text-gray-400 font-normal">(optional)</span>
+                                <label className="block text-sm font-semibold text-gray-300 mb-2">
+                                    Target Job{" "}
+                                    <span className="text-gray-500 font-normal">(optional)</span>
                                 </label>
                                 <textarea
                                     value={jobDescription}
                                     onChange={(e) => setJobDescription(e.target.value)}
                                     placeholder="Paste the job description for tailored analysis..."
-                                    className="w-full h-28 p-4 bg-white/50 border border-gray-200 rounded-xl text-sm text-gray-900 placeholder:text-gray-400 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/20 transition-all resize-none"
+                                    className="w-full h-28 p-4 bg-gray-900/50 border border-gray-700 rounded-xl text-sm text-gray-200 placeholder:text-gray-600 focus:border-gray-600 focus:ring-2 focus:ring-gray-700/50 transition-all resize-none"
                                 />
                             </div>
 
@@ -380,7 +386,7 @@ export default function Home() {
                             <button
                                 onClick={handleAnalyze}
                                 disabled={!selectedFile || loading}
-                                className="w-full bg-gradient-to-r from-indigo-600 to-purple-600 text-white h-14 rounded-xl font-semibold text-base hover:from-indigo-700 hover:to-purple-700 disabled:from-gray-300 disabled:to-gray-300 disabled:cursor-not-allowed transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 hover:scale-[1.02] active:scale-100 disabled:shadow-none"
+                                className="w-full bg-gradient-to-r from-gray-700 to-gray-900 text-white h-14 rounded-xl font-semibold text-base hover:from-gray-800 hover:to-black disabled:from-gray-600 disabled:to-gray-700 disabled:cursor-not-allowed transition-all shadow-lg hover:scale-[1.02] active:scale-100 disabled:shadow-none"
                             >
                                 {loading ? (
                                     <span className="flex items-center justify-center gap-3">
@@ -403,9 +409,7 @@ export default function Home() {
                                         Analyzing with AI...
                                     </span>
                                 ) : (
-                                    <span className="flex items-center justify-center gap-2">
-                                        <span>🚀</span> Analyze Resume
-                                    </span>
+                                    <span>Analyze Resume</span>
                                 )}
                             </button>
 
@@ -421,16 +425,13 @@ export default function Home() {
                         {!analysis && !loading && (
                             <div className="grid grid-cols-3 gap-3">
                                 <div className="glass shadow-glass rounded-xl p-3 text-center">
-                                    <div className="text-2xl mb-1">⚡</div>
-                                    <p className="text-xs font-medium text-gray-600">Instant</p>
+                                    <p className="text-xs font-medium text-gray-400">Instant</p>
                                 </div>
                                 <div className="glass shadow-glass rounded-xl p-3 text-center">
-                                    <div className="text-2xl mb-1">🎯</div>
-                                    <p className="text-xs font-medium text-gray-600">Accurate</p>
+                                    <p className="text-xs font-medium text-gray-400">Accurate</p>
                                 </div>
                                 <div className="glass shadow-glass rounded-xl p-3 text-center">
-                                    <div className="text-2xl mb-1">🔒</div>
-                                    <p className="text-xs font-medium text-gray-600">Private</p>
+                                    <p className="text-xs font-medium text-gray-400">Private</p>
                                 </div>
                             </div>
                         )}
@@ -443,17 +444,17 @@ export default function Home() {
                             <div className="glass shadow-glass-lg rounded-2xl p-8">
                                 <div className="flex flex-col md:flex-row items-center justify-between gap-8">
                                     <div className="text-center md:text-left">
-                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-100 text-gray-600 text-xs font-medium mb-3">
+                                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-gray-800 text-gray-300 text-xs font-medium mb-3">
                                             ATS Compatibility Score
                                         </div>
                                         <h3
                                             className={`text-3xl font-bold ${getScoreColor(
-                                                analysis?.ats_score
+                                                analysis?.ats_score,
                                             )}`}
                                         >
                                             {getScoreLabel(analysis?.ats_score)}
                                         </h3>
-                                        <p className="text-sm text-gray-500 mt-2">
+                                        <p className="text-sm text-gray-400 mt-2">
                                             {(analysis?.ats_score ?? 0) >= 80
                                                 ? "Your resume is well-optimized!"
                                                 : "There's room for improvement"}
@@ -465,7 +466,7 @@ export default function Home() {
                                                 cx="72"
                                                 cy="72"
                                                 r="64"
-                                                stroke="#e2e8f0"
+                                                stroke="#2a2a2a"
                                                 strokeWidth="10"
                                                 fill="none"
                                             />
@@ -493,16 +494,16 @@ export default function Home() {
                                                     x2="100%"
                                                     y2="100%"
                                                 >
-                                                    <stop offset="0%" stopColor="#6366f1" />
-                                                    <stop offset="100%" stopColor="#a855f7" />
+                                                    <stop offset="0%" stopColor="#4a4a4a" />
+                                                    <stop offset="100%" stopColor="#6a6a6a" />
                                                 </linearGradient>
                                             </defs>
                                         </svg>
                                         <div className="absolute flex flex-col items-center">
-                                            <span className="text-4xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                                            <span className="text-4xl font-bold text-gray-200">
                                                 {analysis?.ats_score ?? 0}
                                             </span>
-                                            <span className="text-xs text-gray-400 font-medium">
+                                            <span className="text-xs text-gray-500 font-medium">
                                                 out of 100
                                             </span>
                                         </div>
@@ -513,8 +514,8 @@ export default function Home() {
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 {/* Analysis Column */}
                                 <div className="glass shadow-glass-lg rounded-2xl p-6">
-                                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center text-white shadow-lg">
+                                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-800">
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white shadow-lg">
                                             <svg
                                                 className="w-5 h-5"
                                                 fill="none"
@@ -530,7 +531,7 @@ export default function Home() {
                                             </svg>
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-gray-900">
+                                            <h3 className="font-semibold text-gray-200">
                                                 Fit Analysis
                                             </h3>
                                             <p className="text-xs text-gray-500">
@@ -545,8 +546,8 @@ export default function Home() {
 
                                 {/* Improvements Column */}
                                 <div className="glass shadow-glass-lg rounded-2xl p-6">
-                                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-100">
-                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-emerald-500 to-green-500 flex items-center justify-center text-white shadow-lg">
+                                    <div className="flex items-center gap-3 mb-6 pb-4 border-b border-gray-800">
+                                        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center text-white shadow-lg">
                                             <svg
                                                 className="w-5 h-5"
                                                 fill="none"
@@ -562,7 +563,7 @@ export default function Home() {
                                             </svg>
                                         </div>
                                         <div>
-                                            <h3 className="font-semibold text-gray-900">
+                                            <h3 className="font-semibold text-gray-200">
                                                 Improvements
                                             </h3>
                                             <p className="text-xs text-gray-500">
@@ -577,20 +578,20 @@ export default function Home() {
                             </div>
 
                             {/* CTA to LaTeX Builder */}
-                            <div className="glass shadow-glass-lg rounded-2xl p-6 bg-gradient-to-r from-indigo-500/10 to-purple-500/10 border border-indigo-200/50">
+                            <div className="glass shadow-glass-lg rounded-2xl p-6 bg-gray-900/50 border border-gray-700">
                                 <div className="flex flex-col md:flex-row items-center justify-between gap-4">
                                     <div>
-                                        <h3 className="font-semibold text-gray-900 mb-1">
-                                            ✨ Want to rebuild your resume from scratch?
+                                        <h3 className="font-semibold text-white mb-1">
+                                            Want to rebuild your resume from scratch?
                                         </h3>
-                                        <p className="text-sm text-gray-600">
+                                        <p className="text-sm text-gray-400">
                                             Use our AI-powered LaTeX builder to create a
                                             professional, ATS-optimized resume.
                                         </p>
                                     </div>
                                     <Link
                                         href="/latex-editor"
-                                        className="px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-semibold rounded-xl hover:from-indigo-700 hover:to-purple-700 transition-all shadow-lg shadow-indigo-500/25 hover:shadow-indigo-500/40 whitespace-nowrap"
+                                        className="px-6 py-3 bg-gradient-to-r from-gray-700 to-gray-900 text-white font-semibold rounded-xl hover:from-gray-800 hover:to-black transition-all shadow-lg whitespace-nowrap"
                                     >
                                         Open LaTeX Builder →
                                     </Link>
@@ -602,8 +603,8 @@ export default function Home() {
             </main>
 
             {/* Footer */}
-            <footer className="py-8 text-center text-sm text-gray-400">
-                <p>Built with ❤️ for job seekers everywhere</p>
+            <footer className="py-8 text-center text-sm text-gray-500">
+                <p>Built for job seekers everywhere</p>
             </footer>
         </div>
     );
