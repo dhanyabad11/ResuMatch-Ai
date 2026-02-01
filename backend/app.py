@@ -11,9 +11,10 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'src'))
 # Import application factory
 from src.core.app_factory import create_app
 
-# Create application instance
+# Create application instance - THIS MUST BE AT MODULE LEVEL for Gunicorn
 app = create_app()
 
+# For local development and debugging
 if __name__ == '__main__':
     print("=" * 60)
     print("🚀 ResuMatch AI Backend v2.0")
@@ -33,8 +34,11 @@ if __name__ == '__main__':
     print("   - GET  /api/v1/latex/starter      - Get starter template")
     print("=" * 60)
     
+    # Get port from environment variable or use default
+    port = int(os.environ.get('PORT', 5001))
+    
     app.run(
         host='0.0.0.0',
-        port=5001,
-        debug=True
+        port=port,
+        debug=os.environ.get('FLASK_ENV') != 'production'
     )
