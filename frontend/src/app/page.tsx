@@ -3,7 +3,6 @@
 import { useState } from "react";
 import axios from "axios";
 import { getApiUrl, API_CONFIG } from "@/lib/config";
-import Image from "next/image";
 import Link from "next/link";
 
 interface AnalysisResult {
