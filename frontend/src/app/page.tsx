@@ -52,7 +52,7 @@ export default function Home() {
                 formData,
                 {
                     headers: {
-                        'Content-Type': 'multipart/form-data',
+                        "Content-Type": "multipart/form-data",
                     },
                     timeout: 120000,
                 },
@@ -260,9 +260,7 @@ export default function Home() {
                         </div>
                         <h2 className="text-5xl md:text-6xl font-bold text-white tracking-tight mb-6 leading-tight">
                             Get Your Resume
-                            <span className="block text-gray-300">
-                                ATS-Ready
-                            </span>
+                            <span className="block text-gray-300">ATS-Ready</span>
                         </h2>
                         <p className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
                             Upload your resume and get instant AI feedback to boost your chances of

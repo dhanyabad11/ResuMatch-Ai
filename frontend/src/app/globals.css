@@ -10,7 +10,12 @@
 body {
     background: var(--background);
     color: var(--foreground);
-    font-family: var(--font-inter), -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto,
+    font-family:
+        var(--font-inter),
+        -apple-system,
+        BlinkMacSystemFont,
+        "Segoe UI",
+        Roboto,
         sans-serif;
     line-height: 1.6;
     -webkit-font-smoothing: antialiased;
@@ -43,12 +48,16 @@ body {
 
 /* Subtle shadow */
 .shadow-glass {
-    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.3), 0 10px 15px -3px rgba(0, 0, 0, 0.2),
+    box-shadow:
+        0 4px 6px -1px rgba(0, 0, 0, 0.3),
+        0 10px 15px -3px rgba(0, 0, 0, 0.2),
         0 0 0 1px rgba(60, 60, 60, 0.5) inset;
 }
 
 .shadow-glass-lg {
-    box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.4), 0 20px 40px -10px rgba(0, 0, 0, 0.3),
+    box-shadow:
+        0 10px 25px -5px rgba(0, 0, 0, 0.4),
+        0 20px 40px -10px rgba(0, 0, 0, 0.3),
         0 0 0 1px rgba(60, 60, 60, 0.5) inset;
 }
 
